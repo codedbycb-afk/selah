@@ -1,20 +1,34 @@
 # Selah — Scroll the Word
 
-A doom-scroll Bible. Full-screen vertical snap feed, one verse per screen, infinite.
-Built like TikTok, but every swipe is Scripture. Single self-contained `index.html` — no build, no dependencies, works offline.
+A doom-scroll Bible with teeth. Full-screen vertical snap feed of Scripture, plus a
+Duolingo-style memorization engine, a habit tracker, device profiles, and multiple translations.
+Static site — no build, works offline, installs to your home screen.
 
-- **Text:** World English Bible (public domain). ~115 curated verses offline + live random pull from bible-api.com when online (infinite).
-- **Features:** Keep (saved verses, stored on-device), Copy, Share, rotating time-of-day atmospheres, illuminated drop caps.
-- **Type:** Iowan Old Style — native on iPhone, zero network.
-- **Install:** Add to Home Screen on iOS → runs full-screen like a real app.
+**Live:** https://codedbycb-afk.github.io/selah/
+
+## Features
+- **Read** — infinite stained-glass verse feed (jewel-tone "windows", lancet-arch motif, illuminated drop caps). Keep / Copy / Share. WEB pool offline + live random pull online.
+- **Learn** — "Hide the Word." Spaced-repetition (SM-2-lite) memory deck with 4 Duolingo-style exercise types: arrange-the-verse tiles, fill-the-blank word bank, reference match, and recall + self-rate. XP, hearts, daily goal ring.
+- **Track** — day streak ring, XP, verses read, memorized / learning counts, longest streak, 13-week activity heatmap.
+- **Me** — device profiles (name + avatar + optional PIN lock), multi-profile switcher, translation + daily-goal settings. All data on-device.
+
+## Translations
+- **WEB** (World English Bible) — bundled, offline, public domain.
+- **KJV** — via bible-api.com (public domain).
+- **ESV / NLT** — copyrighted; shown via their **official free APIs**. Add your own free key in
+  Me → Translation (get one at api.esv.org / api.nlt.to, ~2 min). Keys stay on-device.
+
+## Files
+- `index.html` — shell (nav, views, lesson runner, gates)
+- `styles.css` — stained-glass design system (Cinzel + Cormorant Garamond)
+- `data.js` — feed pool (WEB) + memory deck (WEB + KJV)
+- `app.js` — profiles, translations, feed, SRS lesson engine, tracker
 
 ## Run locally
 ```bash
-cd ~/Developer/selah
-python3 -m http.server 8791
+cd ~/Developer/selah && python3 -m http.server 8791
 # open http://localhost:8791
 ```
 
-## Put it on your phone
-Deploy the folder to any static host (Vercel/Netlify/GitHub Pages), open the URL on your iPhone,
-Share → Add to Home Screen. Done — a real doom-scroll Bible app on your home screen.
+## Deploy updates
+Edit files, then `git add -A && git commit -m "…" && git push`. Same URL.

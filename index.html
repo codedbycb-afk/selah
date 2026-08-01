@@ -3,510 +3,83 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#0b0e1a">
+<meta name="theme-color" content="#07070c">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Selah">
 <title>Selah — Scroll the Word</title>
-<style>
-  :root{
-    --ink:#f3ecd9;          /* parchment text */
-    --ink-soft:#cbb98f;     /* aged gold */
-    --gold:#d9b45f;         /* illuminated accent */
-    --bg:#0b0e1a;
-    --rail:rgba(243,236,217,.9);
-    --card-pad: clamp(26px, 7vw, 60px);
-  }
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{margin:0; height:100%; background:var(--bg); overscroll-behavior:none;}
-  body{
-    font-family:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,"Times New Roman",serif;
-    color:var(--ink);
-    -webkit-font-smoothing:antialiased;
-    text-rendering:optimizeLegibility;
-    overflow:hidden;
-  }
-
-  /* ---------- Feed ---------- */
-  #feed{
-    height:100dvh;
-    overflow-y:scroll;
-    scroll-snap-type:y mandatory;
-    scroll-behavior:smooth;
-    -webkit-overflow-scrolling:touch;
-    scrollbar-width:none;
-  }
-  #feed::-webkit-scrollbar{display:none;}
-
-  .verse{
-    position:relative;
-    height:100dvh;
-    scroll-snap-align:start;
-    scroll-snap-stop:always;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    padding: calc(env(safe-area-inset-top) + 84px) var(--card-pad) calc(env(safe-area-inset-bottom) + 120px);
-    overflow:hidden;
-    isolation:isolate;
-  }
-  /* ambient godray + grain layers */
-  .verse::before{
-    content:"";
-    position:absolute; inset:-20% -20% auto -20%; height:80%;
-    background:radial-gradient(120% 70% at 30% 0%, rgba(255,255,255,.16), rgba(255,255,255,0) 60%);
-    mix-blend-mode:screen; pointer-events:none; z-index:0;
-    animation:drift 26s ease-in-out infinite alternate;
-  }
-  .verse::after{
-    content:"";
-    position:absolute; inset:0; pointer-events:none; z-index:0;
-    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/></svg>");
-    /* soft vignette on top of grain */
-    box-shadow:inset 0 0 200px 40px rgba(0,0,0,.55);
-    opacity:.9;
-  }
-  @keyframes drift{ from{transform:translate3d(-4%,0,0) scale(1.05);} to{transform:translate3d(4%,2%,0) scale(1.15);} }
-
-  .verse > *{position:relative; z-index:1;}
-
-  .ref{
-    font-size:.72rem; letter-spacing:.34em; text-transform:uppercase;
-    color:var(--ink-soft); font-weight:600;
-    display:flex; align-items:center; gap:.7em; margin:0 0 clamp(20px,4.5vh,40px);
-    opacity:0; transform:translateY(10px);
-  }
-  .ref::before{ content:""; width:26px; height:1px; background:var(--gold); opacity:.85; }
-
-  .text{
-    font-size:clamp(1.7rem, 4.4vw + 1rem, 3.15rem);
-    line-height:1.32; font-weight:400; letter-spacing:.002em;
-    max-width:16em; text-wrap:balance;
-    text-shadow:0 1px 30px rgba(0,0,0,.35);
-    opacity:0; transform:translateY(16px);
-  }
-  .text .cap{
-    float:left; font-size:3.1em; line-height:.72; padding:.06em .12em 0 0;
-    color:var(--gold); font-weight:600;
-  }
-
-  /* reveal when card is the active snap target */
-  .verse.live .ref{ animation:rise .7s .05s cubic-bezier(.2,.8,.2,1) forwards; }
-  .verse.live .text{ animation:rise .8s .12s cubic-bezier(.2,.8,.2,1) forwards; }
-  @keyframes rise{ to{opacity:1; transform:none;} }
-
-  /* ---------- Right action rail ---------- */
-  .rail{
-    position:absolute; right:clamp(12px,4vw,22px);
-    bottom:calc(env(safe-area-inset-bottom) + 30px);
-    display:flex; flex-direction:column; gap:22px; z-index:2;
-  }
-  .rail button{
-    all:unset; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:5px;
-    color:var(--rail); width:48px;
-  }
-  .rail svg{ width:27px; height:27px; filter:drop-shadow(0 2px 6px rgba(0,0,0,.5)); transition:transform .18s ease; }
-  .rail button:active svg{ transform:scale(.82); }
-  .rail .lab{ font-size:.62rem; letter-spacing:.06em; opacity:.85; font-variant-numeric:tabular-nums;
-    font-family:ui-sans-serif,system-ui,sans-serif; }
-  .rail button.on svg{ fill:var(--gold); stroke:var(--gold); color:var(--gold); }
-  .rail button.on .lab{ color:var(--gold); opacity:1; }
-  @keyframes pop{ 40%{transform:scale(1.3);} 70%{transform:scale(.9);} 100%{transform:scale(1);} }
-  .rail button.burst svg{ animation:pop .4s ease; }
-
-  /* ---------- Top bar ---------- */
-  header{
-    position:fixed; top:0; left:0; right:0; z-index:5;
-    display:flex; align-items:center; justify-content:space-between;
-    padding:calc(env(safe-area-inset-top) + 16px) 22px 14px;
-    background:linear-gradient(to bottom, rgba(0,0,0,.42), rgba(0,0,0,0));
-    pointer-events:none;
-  }
-  header *{pointer-events:auto;}
-  .brand{ display:flex; align-items:baseline; gap:.5em; }
-  .brand b{ font-size:1.18rem; font-weight:600; letter-spacing:.14em; color:var(--ink);}
-  .brand span{ font-size:.6rem; letter-spacing:.32em; text-transform:uppercase; color:var(--ink-soft); }
-  .savedBtn{ all:unset; cursor:pointer; display:flex; align-items:center; gap:7px; color:var(--ink);
-    font-family:ui-sans-serif,system-ui,sans-serif; font-size:.8rem; padding:7px 12px; border-radius:999px;
-    background:rgba(255,255,255,.08); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
-    border:1px solid rgba(243,236,217,.14);}
-  .savedBtn svg{width:16px;height:16px;fill:var(--gold);}
-
-  /* ---------- Scroll hint ---------- */
-  .hint{
-    position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom) + 22px);
-    text-align:center; z-index:4; pointer-events:none;
-    color:var(--ink-soft); font-size:.68rem; letter-spacing:.28em; text-transform:uppercase;
-    font-family:ui-sans-serif,system-ui,sans-serif;
-    animation:hintPulse 2.4s ease-in-out infinite;
-    transition:opacity .5s;
-  }
-  .hint svg{ display:block; margin:6px auto 0; width:18px; height:18px; stroke:var(--ink-soft); }
-  @keyframes hintPulse{ 0%,100%{opacity:.35; transform:translateY(0);} 50%{opacity:.9; transform:translateY(4px);} }
-
-  /* ---------- Saved drawer ---------- */
-  .sheet{
-    position:fixed; inset:0; z-index:20; background:rgba(6,8,14,.86);
-    backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-    display:flex; flex-direction:column; transform:translateY(100%); transition:transform .34s cubic-bezier(.2,.8,.2,1);
-  }
-  .sheet.open{ transform:none; }
-  .sheet header{ position:static; background:none; padding:calc(env(safe-area-inset-top) + 20px) 22px 14px; }
-  .sheet h2{ margin:0; font-size:1.3rem; font-weight:600; letter-spacing:.06em;}
-  .sheet .close{ all:unset; cursor:pointer; font-size:1.7rem; color:var(--ink-soft); line-height:1;}
-  .sheet .list{ overflow-y:auto; padding:6px 22px calc(env(safe-area-inset-bottom) + 30px); }
-  .savedItem{ padding:20px 0; border-top:1px solid rgba(243,236,217,.1);}
-  .savedItem .r{ font-size:.64rem; letter-spacing:.28em; text-transform:uppercase; color:var(--gold); margin-bottom:8px;}
-  .savedItem .t{ font-size:1.12rem; line-height:1.4;}
-  .savedItem button{ all:unset; cursor:pointer; color:var(--ink-soft); font-size:.72rem; margin-top:10px;
-    font-family:ui-sans-serif,system-ui,sans-serif; letter-spacing:.05em;}
-  .empty{ color:var(--ink-soft); text-align:center; padding:22vh 30px; line-height:1.6;}
-  .empty b{display:block;color:var(--ink);font-size:1.15rem;margin-bottom:8px;letter-spacing:.04em;}
-
-  .toast{
-    position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 92px); transform:translate(-50%,20px);
-    background:rgba(20,18,12,.94); color:var(--ink); border:1px solid rgba(217,180,95,.35);
-    padding:11px 20px; border-radius:999px; font-size:.8rem; letter-spacing:.03em; z-index:30;
-    font-family:ui-sans-serif,system-ui,sans-serif; opacity:0; pointer-events:none; transition:.25s;
-    box-shadow:0 10px 40px rgba(0,0,0,.5);
-  }
-  .toast.show{ opacity:1; transform:translate(-50%,0); }
-
-  @media (prefers-reduced-motion:reduce){
-    .verse::before{animation:none;}
-    .verse .ref,.verse .text{animation:none;opacity:1;transform:none;}
-    .hint{animation:none;}
-    #feed{scroll-behavior:auto;}
-  }
-</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<header>
-  <div class="brand"><b>SELAH</b><span>scroll the word</span></div>
-  <button class="savedBtn" id="openSaved" aria-label="Saved verses">
-    <svg viewBox="0 0 24 24"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>
-    <span id="savedCount">0</span>
-  </button>
-</header>
+<!-- gate: onboarding / profile picker / PIN lock -->
+<div class="gate" id="gate"></div>
 
-<main id="feed" aria-label="Scripture feed"></main>
+<!-- app shell -->
+<div id="shell" style="display:none">
 
-<div class="hint" id="hint">Swipe up
-  <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+  <div class="topbar" id="topbar">
+    <div class="brand"><b>SELAH</b><span>scroll the word</span></div>
+    <button class="pill book" id="openSaved" aria-label="Kept verses">
+      <svg viewBox="0 0 24 24"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>
+      Kept
+    </button>
+  </div>
+
+  <div id="app">
+    <!-- READ -->
+    <section class="view active" id="view-read">
+      <main id="feed" aria-label="Scripture feed"></main>
+      <div class="hint" id="hint">Swipe up ↑</div>
+    </section>
+    <!-- LEARN -->
+    <section class="view" id="view-learn"><div class="scroll" id="learn-body"></div></section>
+    <!-- TRACK -->
+    <section class="view" id="view-track"><div class="scroll" id="track-body"></div></section>
+    <!-- ME -->
+    <section class="view" id="view-me"><div class="scroll" id="me-body"></div></section>
+  </div>
+
+  <nav class="nav">
+    <button data-go="read" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5c3 0 6 1 8 2 2-1 5-2 8-2v14c-3 0-6 1-8 2-2-1-5-2-8-2V5z"/><path d="M12 7v12"/></svg><span class="l">Read</span></button>
+    <button data-go="learn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M6 10v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg><span class="l">Learn</span></button>
+    <button data-go="track"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="l">Track</span></button>
+    <button data-go="me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"/></svg><span class="l">Me</span></button>
+  </nav>
 </div>
 
-<!-- Saved drawer -->
-<section class="sheet" id="sheet" aria-hidden="true">
-  <header>
-    <h2>Kept verses</h2>
-    <button class="close" id="closeSaved" aria-label="Close">×</button>
-  </header>
-  <div class="list" id="savedList"></div>
+<!-- lesson runner -->
+<div class="lesson" id="lesson">
+  <div class="lesson-top">
+    <button class="x" id="lessonX" aria-label="Close">×</button>
+    <div class="progress"><i></i></div>
+    <div class="hearts"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.35-9.5-8.5C.5 9 2 5.5 5.2 5.5c1.9 0 3.1 1.1 3.8 2.1.7-1 1.9-2.1 3.8-2.1C16 5.5 17.5 9 15.5 12.5 13 16.65 12 21 12 21z"/></svg><span id="hearts-n">5</span></div>
+  </div>
+  <div class="lesson-body"></div>
+  <div class="lesson-foot"></div>
+</div>
+
+<!-- saved drawer -->
+<section class="sheet" id="sheet">
+  <div class="sheet-h"><h2>Kept verses</h2><button class="x" id="closeSaved">×</button></div>
+  <div class="body" id="savedList"></div>
 </section>
 
 <div class="toast" id="toast"></div>
 
+<script src="data.js"></script>
+<script src="app.js"></script>
 <script>
-/* ============================================================
-   SELAH — an infinite Scripture feed
-   Text: World English Bible (public domain)
-   Offline-first curated pool + live random pull when online
-   ============================================================ */
-
-// A curated, wide-ranging pool. Reads first offline & instantly.
-const POOL = [
- ["Genesis 1:1","In the beginning, God created the heavens and the earth."],
- ["Genesis 1:3","God said, “Let there be light,” and there was light."],
- ["Genesis 28:15","Behold, I am with you, and will keep you, wherever you go."],
- ["Exodus 14:14","Yahweh will fight for you, and you shall be still."],
- ["Deuteronomy 31:6","Be strong and courageous. Don’t be afraid; for Yahweh your God goes with you. He will not fail you, nor forsake you."],
- ["Joshua 1:9","Be strong and courageous. Don’t be afraid. Don’t be dismayed, for Yahweh your God is with you wherever you go."],
- ["1 Samuel 16:7","Man looks at the outward appearance, but Yahweh looks at the heart."],
- ["Nehemiah 8:10","Don’t be grieved, for the joy of Yahweh is your strength."],
- ["Psalm 23:1","Yahweh is my shepherd; I shall lack nothing."],
- ["Psalm 23:4","Even though I walk through the valley of the shadow of death, I will fear no evil, for you are with me."],
- ["Psalm 27:1","Yahweh is my light and my salvation. Whom shall I fear?"],
- ["Psalm 34:18","Yahweh is near to those who have a broken heart, and saves those who have a crushed spirit."],
- ["Psalm 46:1","God is our refuge and strength, a very present help in trouble."],
- ["Psalm 46:10","Be still, and know that I am God."],
- ["Psalm 51:10","Create in me a clean heart, O God. Renew a right spirit within me."],
- ["Psalm 55:22","Cast your burden on Yahweh and he will sustain you. He will never allow the righteous to be moved."],
- ["Psalm 91:1","He who dwells in the secret place of the Most High will rest in the shadow of the Almighty."],
- ["Psalm 118:24","This is the day that Yahweh has made. We will rejoice and be glad in it!"],
- ["Psalm 119:105","Your word is a lamp to my feet, and a light for my path."],
- ["Psalm 121:1","I will lift up my eyes to the hills. Where does my help come from?"],
- ["Psalm 121:2","My help comes from Yahweh, who made heaven and earth."],
- ["Psalm 139:14","I will give thanks to you, for I am fearfully and wonderfully made."],
- ["Psalm 147:3","He heals the broken in heart, and binds up their wounds."],
- ["Proverbs 3:5","Trust in Yahweh with all your heart, and don’t lean on your own understanding."],
- ["Proverbs 3:6","In all your ways acknowledge him, and he will make your paths straight."],
- ["Proverbs 4:23","Keep your heart with all diligence, for out of it is the wellspring of life."],
- ["Proverbs 16:3","Commit your deeds to Yahweh, and your plans shall succeed."],
- ["Proverbs 18:10","Yahweh’s name is a strong tower: the righteous run to him, and are safe."],
- ["Proverbs 27:17","Iron sharpens iron; so a man sharpens his friend’s countenance."],
- ["Ecclesiastes 3:1","For everything there is a season, and a time for every purpose under heaven."],
- ["Isaiah 26:3","You will keep whoever’s mind is steadfast in perfect peace, because he trusts in you."],
- ["Isaiah 40:31","Those who wait for Yahweh will renew their strength. They will mount up with wings like eagles."],
- ["Isaiah 41:10","Don’t be afraid, for I am with you. Don’t be dismayed, for I am your God. I will strengthen you."],
- ["Isaiah 43:2","When you pass through the waters, I will be with you, and through the rivers, they will not overflow you."],
- ["Isaiah 53:5","He was pierced for our transgressions. By his wounds we are healed."],
- ["Jeremiah 29:11","For I know the thoughts that I think toward you, thoughts of peace, and not of evil, to give you hope and a future."],
- ["Lamentations 3:22","It is because of Yahweh’s loving kindnesses that we are not consumed, because his compassion doesn’t fail."],
- ["Lamentations 3:23","They are new every morning. Great is your faithfulness."],
- ["Micah 6:8","He has shown you, O man, what is good. What does Yahweh require of you, but to act justly, to love mercy, and to walk humbly with your God?"],
- ["Zephaniah 3:17","Yahweh, your God, is among you, a mighty one who will save. He will rejoice over you with joy."],
- ["Matthew 5:14","You are the light of the world. A city located on a hill can’t be hidden."],
- ["Matthew 6:33","Seek first God’s Kingdom and his righteousness; and all these things will be given to you as well."],
- ["Matthew 6:34","Therefore don’t be anxious for tomorrow, for tomorrow will be anxious for itself."],
- ["Matthew 11:28","Come to me, all you who labor and are heavily burdened, and I will give you rest."],
- ["Matthew 19:26","With men this is impossible, but with God all things are possible."],
- ["Mark 9:23","All things are possible to him who believes."],
- ["Luke 1:37","For nothing spoken by God is impossible."],
- ["John 1:5","The light shines in the darkness, and the darkness hasn’t overcome it."],
- ["John 3:16","For God so loved the world, that he gave his one and only Son, that whoever believes in him should not perish, but have eternal life."],
- ["John 8:12","I am the light of the world. He who follows me will not walk in the darkness, but will have the light of life."],
- ["John 14:6","I am the way, the truth, and the life. No one comes to the Father, except through me."],
- ["John 14:27","Peace I leave with you. My peace I give to you. Don’t let your heart be troubled, neither let it be fearful."],
- ["John 16:33","In the world you have trouble; but cheer up! I have overcome the world."],
- ["Romans 5:8","But God commends his own love toward us, in that while we were yet sinners, Christ died for us."],
- ["Romans 8:28","We know that all things work together for good for those who love God."],
- ["Romans 8:31","If God is for us, who can be against us?"],
- ["Romans 8:38","For I am persuaded that neither death, nor life, nor angels, nor things present, nor things to come, will be able to separate us from God’s love."],
- ["Romans 12:2","Don’t be conformed to this world, but be transformed by the renewing of your mind."],
- ["Romans 15:13","Now may the God of hope fill you with all joy and peace in believing, that you may abound in hope."],
- ["1 Corinthians 10:13","No temptation has taken you except what is common to man. God is faithful, who will not allow you to be tempted above what you are able."],
- ["1 Corinthians 13:4","Love is patient and is kind. Love doesn’t envy. Love doesn’t brag, is not proud."],
- ["1 Corinthians 13:13","But now faith, hope, and love remain—these three. The greatest of these is love."],
- ["1 Corinthians 16:14","Let all that you do be done in love."],
- ["2 Corinthians 5:7","For we walk by faith, not by sight."],
- ["2 Corinthians 12:9","My grace is sufficient for you, for my power is made perfect in weakness."],
- ["Galatians 5:22","But the fruit of the Spirit is love, joy, peace, patience, kindness, goodness, faith."],
- ["Galatians 6:9","Let us not be weary in doing good, for we will reap in due season, if we don’t give up."],
- ["Ephesians 2:8","For by grace you have been saved through faith, and that not of yourselves; it is the gift of God."],
- ["Ephesians 3:20","Now to him who is able to do exceedingly abundantly above all that we ask or think."],
- ["Ephesians 6:10","Be strong in the Lord, and in the strength of his might."],
- ["Philippians 4:6","In nothing be anxious, but in everything, by prayer and petition with thanksgiving, let your requests be made known to God."],
- ["Philippians 4:7","And the peace of God, which surpasses all understanding, will guard your hearts and your minds in Christ Jesus."],
- ["Philippians 4:8","Whatever things are true, whatever things are honorable, whatever things are pure—think about these things."],
- ["Philippians 4:13","I can do all things through Christ, who strengthens me."],
- ["Colossians 3:23","Whatever you do, work heartily, as for the Lord, and not for men."],
- ["1 Thessalonians 5:16","Rejoice always. Pray without ceasing. In everything give thanks."],
- ["2 Timothy 1:7","For God didn’t give us a spirit of fear, but of power, love, and self-control."],
- ["Hebrews 11:1","Now faith is assurance of things hoped for, proof of things not seen."],
- ["Hebrews 12:1","Let us run with perseverance the race that is set before us."],
- ["Hebrews 13:5","Be free from the love of money, content with such things as you have, for he has said, “I will in no way leave you, neither will I in any way forsake you.”"],
- ["Hebrews 13:8","Jesus Christ is the same yesterday, today, and forever."],
- ["James 1:2","Count it all joy, my brothers, when you fall into various temptations."],
- ["James 1:5","But if any of you lacks wisdom, let him ask of God, who gives to all liberally and without reproach."],
- ["1 Peter 5:7","Casting all your worries on him, because he cares for you."],
- ["1 John 4:4","Greater is he who is in you than he who is in the world."],
- ["1 John 4:18","There is no fear in love; but perfect love casts out fear."],
- ["1 John 4:19","We love him, because he first loved us."],
- ["Revelation 21:4","He will wipe away every tear from their eyes. Death will be no more; neither will there be mourning, nor crying, nor pain, any more."],
- ["Psalm 19:1","The heavens declare the glory of God. The expanse shows his handiwork."],
- ["Psalm 37:4","Also delight yourself in Yahweh, and he will give you the desires of your heart."],
- ["Psalm 30:5","Weeping may stay for the night, but joy comes in the morning."],
- ["Psalm 16:8","I have set Yahweh always before me. Because he is at my right hand, I shall not be moved."],
- ["Proverbs 17:22","A cheerful heart makes good medicine, but a crushed spirit dries up the bones."],
- ["Isaiah 40:8","The grass withers, the flower fades; but the word of our God stands forever."],
- ["Matthew 5:16","Let your light shine before men, that they may see your good works."],
- ["Matthew 7:7","Ask, and it will be given you. Seek, and you will find. Knock, and it will be opened for you."],
- ["Luke 6:38","Give, and it will be given to you: good measure, pressed down, shaken together, and running over."],
- ["John 15:5","I am the vine. You are the branches. He who remains in me bears much fruit."],
- ["Acts 20:35","It is more blessed to give than to receive."],
- ["Romans 12:12","Rejoice in hope; endure in troubles; continue steadfastly in prayer."],
- ["Colossians 3:2","Set your mind on the things that are above, not on the things that are on the earth."],
- ["Joshua 24:15","As for me and my house, we will serve Yahweh."],
- ["Psalm 143:8","Cause me to hear your loving kindness in the morning, for I trust in you."],
- ["Proverbs 15:1","A gentle answer turns away wrath, but a harsh word stirs up anger."],
- ["Isaiah 55:8","“For my thoughts are not your thoughts, and your ways are not my ways,” says Yahweh."],
- ["Jeremiah 17:7","Blessed is the man who trusts in Yahweh, and whose confidence is in Yahweh."],
- ["Matthew 28:20","Behold, I am with you always, even to the end of the age."],
- ["Galatians 2:20","It is no longer I that live, but Christ lives in me."],
- ["Philippians 1:6","He who began a good work in you will complete it until the day of Jesus Christ."],
- ["Psalm 42:11","Why are you in despair, my soul? Hope in God! For I shall still praise him."],
- ["Psalm 62:1","My soul rests in God alone. My salvation is from him."],
- ["Isaiah 12:2","Behold, God is my salvation. I will trust, and will not be afraid."]
-];
-
-/* ---------- gradient atmospheres (time-of-day light) ---------- */
-const THEMES = [
-  {bg:"linear-gradient(160deg,#0a0f24 0%,#141a3a 55%,#0a0f24 100%)"},   // deep night
-  {bg:"linear-gradient(160deg,#2a1327 0%,#5c2740 50%,#20101f 100%)"},   // dawn rose
-  {bg:"linear-gradient(160deg,#1a1206 0%,#493113 55%,#1a1206 100%)"},   // gold hour
-  {bg:"linear-gradient(160deg,#06171a 0%,#0f3a3d 55%,#06171a 100%)"},   // still waters
-  {bg:"linear-gradient(160deg,#120a1f 0%,#331e4d 55%,#120a1f 100%)"},   // amethyst dusk
-  {bg:"linear-gradient(160deg,#0b1408 0%,#22401c 55%,#0b1408 100%)"},   // olive garden
-  {bg:"linear-gradient(160deg,#1b0a0a 0%,#43201a 55%,#1b0a0a 100%)"},   // ember
-  {bg:"linear-gradient(160deg,#060a12 0%,#1e2c44 55%,#060a12 100%)"},   // pre-dawn slate
-];
-const themeColors = ["#0f1430","#3a1a2c","#2a1c0d","#0a2528","#241436","#16290f","#2b1310","#111c2e"];
-
-/* ---------- state ---------- */
-const feed = document.getElementById('feed');
-const saved = JSON.parse(localStorage.getItem('selah.saved')||'[]');
-let deck = [];        // shuffled queue of [ref,text]
-let served = 0;       // total cards rendered
-let recent = new Set();
-
-function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
-function refillDeck(){ deck = deck.concat(shuffle(POOL)); }
-
-function nextVerse(){
-  if(deck.length<3) refillDeck();
-  // avoid immediate repeats
-  let v = deck.shift();
-  let guard=0;
-  while(recent.has(v[0]) && deck.length>4 && guard++<8){ deck.push(v); v=deck.shift(); }
-  recent.add(v[0]); if(recent.size>18){ recent = new Set([...recent].slice(-12)); }
-  return v;
-}
-
-function isSaved(ref){ return saved.some(s=>s[0]===ref); }
-function svg(name){
-  const P={
-    heart:'<path d="M12 21s-7-4.35-9.5-8.5C.5 9 2 5.5 5.2 5.5c1.9 0 3.1 1.1 3.8 2.1.7-1 1.9-2.1 3.8-2.1C16 5.5 17.5 9 15.5 12.5 13 16.65 12 21 12 21z"/>',
-    copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V6a2 2 0 0 1 2-2h8"/>',
-    share:'<path d="M12 3v13"/><path d="M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>'
-  };
-  const filled = name==='heart';
-  return `<svg viewBox="0 0 24 24" ${filled?'fill="none"':'fill="none"'} stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${P[name]}</svg>`;
-}
-
-function makeCard(ref,text){
-  const el = document.createElement('article');
-  el.className='verse';
-  const t = THEMES[served % THEMES.length];
-  el.style.background = t.bg;
-  const words = text.trim();
-  const first = words.charAt(0);
-  const rest = words.slice(1);
-  el.innerHTML = `
-    <p class="ref">${ref}</p>
-    <p class="text"><span class="cap">${first}</span>${rest}</p>
-    <div class="rail">
-      <button class="save ${isSaved(ref)?'on':''}" aria-label="Keep verse">${svg('heart')}<span class="lab">Keep</span></button>
-      <button class="copy" aria-label="Copy verse">${svg('copy')}<span class="lab">Copy</span></button>
-      <button class="share" aria-label="Share verse">${svg('share')}<span class="lab">Share</span></button>
-    </div>`;
-  el.dataset.ref = ref; el.dataset.text = text;
-
-  el.querySelector('.save').addEventListener('click',e=>{ toggleSave(ref,text,e.currentTarget); });
-  el.querySelector('.copy').addEventListener('click',e=>{ copyVerse(ref,text); burst(e.currentTarget); });
-  el.querySelector('.share').addEventListener('click',e=>{ shareVerse(ref,text); burst(e.currentTarget); });
-  served++;
-  return el;
-}
-
-function appendBatch(n=4){ for(let i=0;i<n;i++){ const [r,t]=nextVerse(); feed.appendChild(makeCard(r,t)); } }
-
-/* ---------- reveal / infinite ---------- */
-const io = new IntersectionObserver((ents)=>{
-  ents.forEach(en=>{
-    if(en.isIntersecting && en.intersectionRatio>0.6){
-      en.target.classList.add('live');
-      const cards=[...feed.children];
-      if(cards.indexOf(en.target) >= cards.length-3){ appendBatch(4); topUpFromNet(); }
-      if(served>1) hideHint();
-    }
-  });
-},{root:feed, threshold:[0.6]});
-
-const mo = new MutationObserver(recs=>recs.forEach(r=>r.addedNodes.forEach(n=>{ if(n.nodeType===1) io.observe(n); })));
-mo.observe(feed,{childList:true});
-
-/* ---------- actions ---------- */
-function persist(){ localStorage.setItem('selah.saved', JSON.stringify(saved)); document.getElementById('savedCount').textContent=saved.length; }
-function toggleSave(ref,text,btn){
-  const i = saved.findIndex(s=>s[0]===ref);
-  if(i>=0){ saved.splice(i,1); btn?.classList.remove('on'); toast('Removed'); }
-  else{ saved.unshift([ref,text]); btn?.classList.add('on'); btn?.classList.add('burst'); setTimeout(()=>btn?.classList.remove('burst'),400); toast('Kept'); }
-  persist(); if(navigator.vibrate) navigator.vibrate(8);
-}
-async function copyVerse(ref,text){
-  const s = `“${text}”\n— ${ref} (WEB)`;
-  try{ await navigator.clipboard.writeText(s); toast('Copied'); }
-  catch{ toast('Copy unavailable'); }
-}
-async function shareVerse(ref,text){
-  const s = `“${text}”\n— ${ref}`;
-  if(navigator.share){ try{ await navigator.share({text:s, title:'Selah'}); }catch{} }
-  else copyVerse(ref,text);
-}
-function burst(btn){ btn.classList.add('burst'); setTimeout(()=>btn.classList.remove('burst'),400); if(navigator.vibrate) navigator.vibrate(6); }
-
-let toastT;
-function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),1400); }
-
-let hintGone=false;
-function hideHint(){ if(hintGone) return; hintGone=true; document.getElementById('hint').style.opacity='0'; setTimeout(()=>document.getElementById('hint').remove(),600); }
-
-/* ---------- saved drawer ---------- */
-const sheet=document.getElementById('sheet');
-document.getElementById('openSaved').addEventListener('click',openSaved);
-document.getElementById('closeSaved').addEventListener('click',()=>sheet.classList.remove('open'));
-function openSaved(){
-  const list=document.getElementById('savedList');
-  if(!saved.length){ list.innerHTML='<div class="empty"><b>Nothing kept yet</b>Tap Keep on a verse and it waits for you here.</div>'; }
-  else list.innerHTML = saved.map((s,i)=>`
-    <div class="savedItem">
-      <div class="r">${s[0]}</div>
-      <div class="t">“${s[1]}”</div>
-      <button data-i="${i}">Remove</button>
-    </div>`).join('');
-  list.querySelectorAll('button[data-i]').forEach(b=>b.addEventListener('click',()=>{
-    saved.splice(+b.dataset.i,1); persist();
-    document.querySelectorAll('.verse .save.on').forEach(x=>{});
-    openSaved();
-  }));
-  sheet.classList.add('open');
-}
-
-/* ---------- live infinite top-up (World English Bible via bible-api.com) ---------- */
-let netBusy=false, netOK=true;
-async function topUpFromNet(){
-  if(netBusy || !netOK || !navigator.onLine) return;
-  netBusy=true;
-  try{
-    const res = await Promise.all([fetchRandom(),fetchRandom(),fetchRandom()]);
-    res.filter(Boolean).forEach(v=>{ if(!POOL.some(p=>p[0]===v[0])) POOL.push(v); });
-  }catch{ netOK=false; }
-  netBusy=false;
-}
-async function fetchRandom(){
-  try{
-    const r = await fetch('https://bible-api.com/data/web/random');
-    if(!r.ok) return null;
-    const d = await r.json();
-    const v = d.random || (d.verses && d.verses[0]);
-    if(!v) return null;
-    const ref = `${v.book} ${v.chapter}:${v.verse}`;
-    const text = (v.text||'').replace(/\s+/g,' ').trim();
-    if(text.length<12 || text.length>240) return null;   // keep cards scroll-sized
-    return [ref, text];
-  }catch{ return null; }
-}
-
-/* ---------- boot ---------- */
-persist();
-refillDeck();
-appendBatch(5);
-requestAnimationFrame(()=>{ feed.firstElementChild?.classList.add('live'); });
-topUpFromNet();
-
-/* ---------- installable PWA (inline manifest, no external files) ---------- */
+/* installable PWA — inline manifest, no external files */
 (function(){
-  const manifest = {
-    name:"Selah", short_name:"Selah", start_url:".", display:"standalone",
-    background_color:"#0b0e1a", theme_color:"#0b0e1a", orientation:"portrait",
-    description:"Scroll the Word.",
-    icons:[{src:"data:image/svg+xml,"+encodeURIComponent('<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"512\" height=\"512\"><rect width=\"512\" height=\"512\" fill=\"#0b0e1a\"/><text x=\"256\" y=\"340\" font-size=\"300\" text-anchor=\"middle\" fill=\"#d9b45f\" font-family=\"Georgia,serif\">S</text></svg>'), sizes:"512x512", type:"image/svg+xml"}]
-  };
-  const blob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
-  const link=document.createElement('link'); link.rel='manifest'; link.href=URL.createObjectURL(blob); document.head.appendChild(link);
+  const m={name:"Selah",short_name:"Selah",start_url:".",display:"standalone",background_color:"#07070c",theme_color:"#07070c",orientation:"portrait",description:"Scroll the Word.",
+    icons:[{src:"data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" fill="#07070c"/><text x="256" y="352" font-size="300" text-anchor="middle" fill="#e6c473" font-family="Georgia,serif">S</text></svg>'),sizes:"512x512",type:"image/svg+xml"}]};
+  const b=new Blob([JSON.stringify(m)],{type:'application/manifest+json'});
+  const l=document.createElement('link'); l.rel='manifest'; l.href=URL.createObjectURL(b); document.head.appendChild(l);
 })();
-window.addEventListener('online',()=>{ netOK=true; topUpFromNet(); });
 </script>
 </body>
 </html>
