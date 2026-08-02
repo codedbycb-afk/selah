@@ -1,0 +1,29 @@
+{
+  "name": "Selah — Scroll the Word",
+  "short_name": "Selah",
+  "description": "A doom-scroll Bible. Read the Word, hide it in your heart, and walk the road from Genesis to Revelation.",
+  "id": "/selah/",
+  "start_url": "./?src=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#07070c",
+  "theme_color": "#07070c",
+  "categories": ["lifestyle", "education", "books"],
+  "lang": "en-US",
+  "dir": "ltr",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Today's verse", "short_name": "Read", "url": "./?view=read",
+      "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Do my lesson", "short_name": "Learn", "url": "./?view=learn",
+      "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] },
+    { "name": "The Journey", "short_name": "Journey", "url": "./?view=journey",
+      "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

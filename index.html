@@ -4,10 +4,28 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#07070c">
+<meta name="description" content="A doom-scroll Bible. Read the Word, hide it in your heart, and walk the road from Genesis to Revelation.">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Selah">
 <title>Selah — Scroll the Word</title>
+
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/favicon.png" sizes="32x32">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<link rel="apple-touch-icon" sizes="167x167" href="assets/icon-167.png">
+<link rel="apple-touch-icon" sizes="152x152" href="assets/icon-152.png">
+<link rel="apple-touch-icon" sizes="120x120" href="assets/icon-120.png">
+
+<meta property="og:title" content="Selah — Scroll the Word">
+<meta property="og:description" content="Doom-scroll the Bible. Memorize it. Walk from Genesis to Revelation.">
+<meta property="og:image" content="assets/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&display=swap" rel="stylesheet">
@@ -35,6 +53,8 @@
       <main id="feed" aria-label="Scripture feed"></main>
       <div class="hint" id="hint">Swipe up ↑</div>
     </section>
+    <!-- JOURNEY -->
+    <section class="view" id="view-journey"><div class="scroll" id="journey-body"></div></section>
     <!-- LEARN -->
     <section class="view" id="view-learn"><div class="scroll" id="learn-body"></div></section>
     <!-- TRACK -->
@@ -44,10 +64,11 @@
   </div>
 
   <nav class="nav">
-    <button data-go="read" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5c3 0 6 1 8 2 2-1 5-2 8-2v14c-3 0-6 1-8 2-2-1-5-2-8-2V5z"/><path d="M12 7v12"/></svg><span class="l">Read</span></button>
-    <button data-go="learn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M6 10v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg><span class="l">Learn</span></button>
-    <button data-go="track"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="l">Track</span></button>
-    <button data-go="me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"/></svg><span class="l">Me</span></button>
+    <button data-go="read" class="active" aria-label="Read"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5c3 0 6 1 8 2 2-1 5-2 8-2v14c-3 0-6 1-8 2-2-1-5-2-8-2V5z"/><path d="M12 7v12"/></svg><span class="l">Read</span></button>
+    <button data-go="journey" aria-label="Journey"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 21c0-4 10-4 10-9S9 8 9 4"/><circle cx="9" cy="3.4" r="1.6"/><circle cx="17" cy="12" r="1.6"/><circle cx="7" cy="21" r="1.6"/></svg><span class="l">Journey</span></button>
+    <button data-go="learn" aria-label="Learn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M6 10v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg><span class="l">Learn</span></button>
+    <button data-go="track" aria-label="Track"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="l">Track</span></button>
+    <button data-go="me" aria-label="Me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"/></svg><span class="l">Me</span></button>
   </nav>
 </div>
 
@@ -62,24 +83,37 @@
   <div class="lesson-foot"></div>
 </div>
 
-<!-- saved drawer -->
+<!-- chapter reader -->
+<div class="reader" id="reader"></div>
+
+<!-- kept verses -->
 <section class="sheet" id="sheet">
   <div class="sheet-h"><h2>Kept verses</h2><button class="x" id="closeSaved">×</button></div>
   <div class="body" id="savedList"></div>
 </section>
 
+<!-- book / chapter picker -->
+<section class="sheet" id="bookSheet"></section>
+
+<!-- friends -->
+<section class="sheet" id="friendSheet"></section>
+
+<!-- add to home screen -->
+<div class="install-bar" id="installBar">
+  <img src="assets/icon-192.png" alt="">
+  <div class="t"><b>Put Selah on your home screen</b><span id="installWhy">Full screen, offline, and daily reminders.</span></div>
+  <button id="installGo">Install</button>
+  <button class="x" id="installNo" aria-label="Dismiss">×</button>
+</div>
+
 <div class="toast" id="toast"></div>
 
+<script src="config.js"></script>
 <script src="data.js"></script>
+<script src="journey.js"></script>
+<script src="share.js"></script>
+<script src="push.js"></script>
+<script src="sync.js"></script>
 <script src="app.js"></script>
-<script>
-/* installable PWA — inline manifest, no external files */
-(function(){
-  const m={name:"Selah",short_name:"Selah",start_url:".",display:"standalone",background_color:"#07070c",theme_color:"#07070c",orientation:"portrait",description:"Scroll the Word.",
-    icons:[{src:"data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" fill="#07070c"/><text x="256" y="352" font-size="300" text-anchor="middle" fill="#e6c473" font-family="Georgia,serif">S</text></svg>'),sizes:"512x512",type:"image/svg+xml"}]};
-  const b=new Blob([JSON.stringify(m)],{type:'application/manifest+json'});
-  const l=document.createElement('link'); l.rel='manifest'; l.href=URL.createObjectURL(b); document.head.appendChild(l);
-})();
-</script>
 </body>
 </html>

@@ -154,12 +154,19 @@ function rebuildFeed(){ feed.innerHTML=''; served=0; deck=[]; recent=new Set(); 
 /* ---------- feed actions ---------- */
 function toggleSave(ref,text,btn){
   const s=savedList(); const i=s.findIndex(x=>x[0]===ref);
-  if(i>=0){s.splice(i,1);btn?.classList.remove('on');toast('Removed');}
-  else{s.unshift([ref,text]);btn?.classList.add('on');burst(btn);toast('Kept');}
+  if(i>=0){s.splice(i,1);btn?.classList.remove('on');toast('Removed');
+    if(window.Sync) Sync.dropHighlight(ref);}
+  else{s.unshift([ref,text]);btn?.classList.add('on');burst(btn);toast('Kept');
+    if(window.Sync) Sync.pushHighlight(ref,text);}
   DB.set('saved',s); vibrate(8);
+  if(window.Sync) Sync.queue();
 }
 async function copyVerse(ref,text){ try{await navigator.clipboard.writeText(`“${text}”\n— ${ref} (${TRANSLATIONS[settings().translation].short})`);toast('Copied');}catch{toast('Copy unavailable');} }
-async function shareVerse(ref,text){ const s=`“${text}”\n— ${ref}`; if(navigator.share){try{await navigator.share({text:s,title:'Selah'});}catch{}}else copyVerse(ref,text); }
+async function shareVerse(ref,text){
+  if(window.Share) return Share.verse(ref,text);          // paints the glass card
+  const s=`“${text}”\n— ${ref}`;
+  if(navigator.share){try{await navigator.share({text:s,title:'Selah'});}catch{}}else copyVerse(ref,text);
+}
 function burst(b){ if(!b)return; b.classList.add('burst'); setTimeout(()=>b.classList.remove('burst'),400); vibrate(6); }
 function vibrate(n){ if(navigator.vibrate) navigator.vibrate(n); }
 let toastT; function toast(m){ const el=$('#toast'); el.textContent=m; el.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),1400); }
@@ -173,7 +180,9 @@ function bump(kind,xp=0){
   const a=activity(); const k=dayKey(); const day=a[k]||{xp:0,read:0,lessons:0};
   if(kind==='read') day.read++;
   if(kind==='lesson') day.lessons++;
+  if(kind==='chapter') day.chapters=(day.chapters||0)+1;
   day.xp+=xp; a[k]=day; DB.set('activity',a);
+  if(window.Sync) Sync.queue();
 }
 function logRead(){ bump('read',0); refreshChrome(); }
 function streakCount(){
@@ -439,7 +448,13 @@ function renderTrack(){
       <div class="metric"><div class="n">${longestStreak()}</div><div class="k">Longest streak</div></div>
     </div>
     <div class="heat gc" style="padding:18px"><h3>Last 13 weeks</h3>
-      <div class="heatgrid">${cells.map(l=>`<i data-l="${l}"></i>`).join('')}</div></div>`;
+      <div class="heatgrid">${cells.map(l=>`<i data-l="${l}"></i>`).join('')}</div></div>
+    <div class="share-strip">
+      <button class="cta" id="shareStreak">Share my streak</button>
+      <button class="cta ghost" id="seeFriends">Friends</button>
+    </div>`;
+  $('#shareStreak').onclick=()=>Share.streak();
+  $('#seeFriends').onclick=openFriends;
 }
 
 /* ============================================================
@@ -462,12 +477,21 @@ function renderMe(){
     <div class="setting"><div class="lab"><b>PIN lock</b><span>${p.pin?'On':'Off'}</span></div>
       <button class="cta ghost sm" id="pinBtn" style="width:auto;padding:10px 16px">${p.pin?'Change':'Set PIN'}</button></div>
 
-    <div style="margin-top:24px" class="link-row" id="switchP"><span>Switch profile</span><small>›</small></div>
-    <div class="link-row" id="addP"><span>Add profile</span><small>›</small></div>
-    <div class="link-row" id="signout"><span class="danger">Sign out</span><small>›</small></div>
+    ${Push.card()}
+    ${accountCard()}
+
+    <div class="setting-group">
+      <div class="group-h caps">This device</div>
+      <div class="link-row" id="switchP"><span>Switch profile</span><small>›</small></div>
+      <div class="link-row" id="addP"><span>Add profile</span><small>›</small></div>
+      <div class="link-row" id="signout"><span class="danger">Lock this profile</span><small>›</small></div>
+    </div>
     <p style="color:var(--ink-dim);font-size:.8rem;margin-top:26px;line-height:1.5">
       Selah · Scripture from the World English Bible (public domain). KJV via bible-api.com.
       ESV © Crossway, NLT © Tyndale — shown via their official free APIs with your key.</p>`;
+
+  Push.wire(renderMe);
+  wireAccount();
 
   $$('#txseg button').forEach(b=>b.onclick=()=>{
     const id=b.dataset.tx; const t=TRANSLATIONS[id];
@@ -491,18 +515,227 @@ function askKey(id){
 }
 
 /* ============================================================
+   ACCOUNT — cloud sync & friends
+   ============================================================ */
+function accountCard(){
+  if(!Sync.ready()) return `
+    <div class="setting-group">
+      <div class="group-h caps">Sync &amp; friends</div>
+      <div class="note">Cloud sync isn’t switched on for this build yet.
+        <small>Everything you read and memorize is saved on this device.</small></div>
+    </div>`;
+  if(!Sync.signedIn()) return `
+    <div class="setting-group">
+      <div class="group-h caps">Sync &amp; friends</div>
+      <div class="note">Sign in to carry your streak between devices and walk with friends.
+        <small>No password — we email you a code.</small></div>
+      <button class="cta ghost" id="signInBtn">Sign in</button>
+    </div>`;
+  const u=Sync.me();
+  return `
+    <div class="setting-group">
+      <div class="group-h caps">Sync &amp; friends</div>
+      <div class="f-you">
+        <div><div class="h">Synced</div><small>${u.email||''}</small></div>
+        <button class="f-act" id="syncNow">Sync now</button>
+      </div>
+      <div class="link-row" id="openFriendsRow"><span>Friends</span><small>›</small></div>
+      <div class="link-row" id="cloudOut"><span class="danger">Sign out of sync</span><small>›</small></div>
+    </div>`;
+}
+function wireAccount(){
+  const b=$('#signInBtn'); if(b) b.onclick=signInFlow;
+  const s=$('#syncNow'); if(s) s.onclick=async()=>{
+    toast('Syncing…');
+    try{ await Sync.firstSync(); toast('Up to date'); refreshChrome(); }
+    catch(e){ toast('Sync failed'); }
+  };
+  const f=$('#openFriendsRow'); if(f) f.onclick=openFriends;
+  const o=$('#cloudOut'); if(o) o.onclick=()=>{ Sync.signOut(); toast('Signed out of sync'); renderMe(); };
+}
+
+/* email-code sign in, drawn in the gate */
+function signInFlow(){
+  const gate=$('#gate'); let email='';
+  gate.innerHTML=`<div class="mark caps">SELAH</div><h2>Sign in</h2>
+    <p>We’ll email you a 6-digit code. No password to forget.</p>
+    <input class="tf" id="em" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com">
+    <button class="cta" id="sendBtn" style="width:min(320px,80vw)">Send code</button>
+    <button class="cta ghost sm" id="cancelSign" style="width:auto;padding:10px 18px;margin-top:14px">Not now</button>`;
+  gate.classList.add('open');
+  $('#em').oninput=e=>email=e.target.value.trim();
+  $('#cancelSign').onclick=()=>gate.classList.remove('open');
+  $('#sendBtn').onclick=async()=>{
+    if(!/.+@.+\..+/.test(email)){ $('#em').focus(); return; }
+    const btn=$('#sendBtn'); btn.textContent='Sending…';
+    try{ await Sync.sendCode(email); codeStep(email); }
+    catch(e){ btn.textContent='Send code'; toast('Couldn’t send that code'); }
+  };
+}
+function codeStep(email){
+  const gate=$('#gate'); let code='';
+  gate.innerHTML=`<div class="mark caps">SELAH</div><h2>Check your email</h2>
+    <p>Enter the code we sent to ${email}.</p>
+    <input class="tf" id="cd" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="······">
+    <button class="cta" id="verifyBtn" style="width:min(320px,80vw)">Verify</button>
+    <button class="cta ghost sm" id="backSign" style="width:auto;padding:10px 18px;margin-top:14px">Use another email</button>`;
+  $('#cd').oninput=e=>{ code=e.target.value.replace(/\D/g,''); e.target.value=code;
+    if(code.length===6) $('#verifyBtn').click(); };
+  $('#backSign').onclick=signInFlow;
+  $('#verifyBtn').onclick=async()=>{
+    if(code.length<6){ $('#cd').focus(); return; }
+    const btn=$('#verifyBtn'); btn.textContent='Verifying…';
+    try{
+      await Sync.verifyCode(email,code);
+      gate.classList.remove('open');
+      toast('Synced ✦');
+      renderMe(); refreshChrome();
+    }catch(e){ btn.textContent='Verify'; toast('That code didn’t work'); }
+  };
+}
+
+/* ---------------- friends sheet ---------------- */
+async function openFriends(){
+  const sheet=$('#friendSheet');
+  sheet.innerHTML=`<div class="sheet-h"><h2 class="caps">Friends</h2><button class="x" id="closeFriends">×</button></div>
+    <div class="body" id="friendBody"><div class="empty"><b>Looking…</b></div></div>`;
+  sheet.classList.add('open');
+  $('#closeFriends').onclick=()=>sheet.classList.remove('open');
+
+  const body=$('#friendBody');
+  if(!Sync.ready()||!Sync.signedIn()){
+    body.innerHTML=`<div class="empty"><b>Sign in to walk together</b>
+      Friends need an account so your streaks can find each other.</div>
+      ${Sync.ready()?`<button class="cta" id="fSignIn">Sign in</button>`:''}`;
+    const b=$('#fSignIn'); if(b) b.onclick=()=>{ sheet.classList.remove('open'); signInFlow(); };
+    return;
+  }
+
+  let list=[],reqs=[],mine=null;
+  try{
+    [list,reqs,mine]=await Promise.all([Sync.friends(),Sync.pending(),Sync.ensureProfile()]);
+  }catch(e){ body.innerHTML=`<div class="empty"><b>Couldn’t reach your friends</b>Check your connection.</div>`; return; }
+
+  const row=f=>`<div class="f-row" data-id="${f.id}">
+      <div class="f-av">${f.avatar||(f.display_name||'?').charAt(0)}</div>
+      <div class="f-who"><b>${f.display_name||f.handle}</b>
+        <span>${f.current_book?`In ${f.current_book}`:'Just started'} · ${f.chapters_read||0} chapters · ${f.memorized||0} memorized</span></div>
+      <div class="f-streak"><b>${f.streak||0}</b><span>days</span></div>
+    </div>`;
+
+  body.innerHTML=`
+    <div class="f-you">
+      <div><div class="h">@${mine.handle}</div><small>Your friend name — share it</small></div>
+      <button class="f-act" id="copyHandle">Copy</button>
+    </div>
+    <div class="f-add">
+      <input type="text" id="fHandle" placeholder="Add by @name" autocapitalize="none" autocorrect="off">
+      <button class="f-act" id="fAdd">Add</button>
+    </div>
+    ${reqs.length?`<div class="group-h caps" style="margin:22px 0 4px">Wants to walk with you</div>
+      ${reqs.map(r=>`<div class="f-row">
+        <div class="f-av">${r.avatar||(r.display_name||'?').charAt(0)}</div>
+        <div class="f-who"><b>${r.display_name||r.handle}</b><span>@${r.handle}</span></div>
+        <button class="f-act" data-accept="${r.id}">Accept</button></div>`).join('')}`:''}
+    <div class="group-h caps" style="margin:22px 0 4px">Walking with you</div>
+    ${list.length?list.map(row).join(''):`<div class="empty" style="padding:8vh 10px"><b>Nobody yet</b>
+      Send someone your @name and start a race through the Word.</div>`}
+    <button class="cta ghost" id="shareInvite" style="margin-top:22px">Invite a friend</button>`;
+
+  $('#copyHandle').onclick=async()=>{ try{await navigator.clipboard.writeText('@'+mine.handle);toast('Copied');}catch{toast('@'+mine.handle);} };
+  $('#fAdd').onclick=async()=>{
+    const h=$('#fHandle').value.trim(); if(!h) return;
+    try{ const p=await Sync.addFriend(h); toast(`Asked ${p.display_name||p.handle} to walk with you`); openFriends(); }
+    catch(e){ toast(e.message||'Couldn’t add them'); }
+  };
+  $$('#friendBody [data-accept]').forEach(b=>b.onclick=async()=>{
+    try{ await Sync.acceptFriend(b.dataset.accept); toast('Walking together ✦'); openFriends(); }
+    catch(e){ toast('Couldn’t accept'); }
+  });
+  $$('#friendBody .f-row[data-id]').forEach(r=>r.onclick=()=>openFriendDetail(list.find(f=>f.id===r.dataset.id)));
+  $('#shareInvite').onclick=async()=>{
+    const url=(window.SELAH_CONFIG||{}).SITE_URL||location.href;
+    const text=`I'm reading the Bible on Selah — I'm @${mine.handle}. Add me and let's keep each other honest.\n${url}`;
+    if(navigator.share){ try{ await navigator.share({text,title:'Selah'}); return; }catch(e){ if(e.name==='AbortError') return; } }
+    try{ await navigator.clipboard.writeText(text); toast('Invite copied'); }catch{ toast('Share @'+mine.handle); }
+  };
+}
+
+async function openFriendDetail(f){
+  if(!f) return;
+  const sheet=$('#friendSheet');
+  sheet.innerHTML=`<div class="sheet-h">
+      <div><h2 class="caps">${f.display_name||f.handle}</h2><small>@${f.handle}</small></div>
+      <button class="x" id="backFriends">×</button></div>
+    <div class="body" id="fdBody">
+      <div class="streak-band">
+        <div class="stat-chip"><div class="n">${f.streak||0}</div><div class="k">Day streak</div></div>
+        <div class="stat-chip"><div class="n">${f.chapters_read||0}</div><div class="k">Chapters</div></div>
+        <div class="stat-chip"><div class="n">${f.memorized||0}</div><div class="k">Memorized</div></div>
+      </div>
+      ${f.current_book?`<div class="note">Currently walking through <b style="color:var(--gold)">${f.current_book}</b>.</div>`:''}
+      <div class="group-h caps" style="margin:24px 0 4px">What they’ve kept</div>
+      <div id="fdHi"><div class="empty" style="padding:6vh 10px"><b>Loading…</b></div></div>
+      <button class="cta ghost" id="unfriend" style="margin-top:26px">Remove friend</button>
+    </div>`;
+  $('#backFriends').onclick=openFriends;
+  $('#unfriend').onclick=async()=>{
+    try{ await Sync.removeFriend(f.id); toast('Removed'); openFriends(); }catch(e){ toast('Couldn’t remove'); }
+  };
+  let hi=[];
+  try{ hi=await Sync.friendHighlights(f.id); }catch(e){}
+  $('#fdHi').innerHTML = hi && hi.length
+    ? hi.map(h=>`<div class="saved-item"><div class="r">${h.ref}</div><div class="t">“${h.text||''}”</div></div>`).join('')
+    : `<div class="empty" style="padding:6vh 10px"><b>Nothing kept yet</b>When they keep a verse, it shows up here.</div>`;
+}
+
+/* ============================================================
+   INSTALL PROMPT
+   ============================================================ */
+let deferredInstall=null;
+function setupInstall(){
+  const bar=$('#installBar');
+  const dismissed=()=>localStorage.getItem('selah.installDismissed')==='1';
+  const standalone=()=>window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+  if(standalone()||dismissed()) return;
+
+  window.addEventListener('beforeinstallprompt',e=>{
+    e.preventDefault(); deferredInstall=e;
+    $('#installGo').style.display='';
+    bar.classList.add('show');
+  });
+  // iOS never fires that event — tell them the manual steps instead
+  if(Push.isIOS()&&!standalone()){
+    $('#installWhy').textContent='Tap Share, then “Add to Home Screen”.';
+    $('#installGo').style.display='none';
+    setTimeout(()=>bar.classList.add('show'),3000);
+  }
+  $('#installGo').onclick=async()=>{
+    if(!deferredInstall) return;
+    deferredInstall.prompt();
+    try{ await deferredInstall.userChoice; }catch(e){}
+    deferredInstall=null; bar.classList.remove('show');
+  };
+  $('#installNo').onclick=()=>{ localStorage.setItem('selah.installDismissed','1'); bar.classList.remove('show'); };
+  window.addEventListener('appinstalled',()=>{ bar.classList.remove('show'); toast('Selah is on your home screen ✦'); });
+}
+
+/* ============================================================
    NAV / router
    ============================================================ */
 function go(view){
+  if(!$('#view-'+view)) view='read';
   $$('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+view));
   $$('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.go===view));
   $('#topbar').style.display = view==='read'?'flex':'none';
+  if(view==='journey'&&window.Journey)Journey.render();
   if(view==='learn')renderLearn();
   if(view==='track')renderTrack();
   if(view==='me')renderMe();
 }
 function refreshChrome(){ if($('#view-learn').classList.contains('active'))renderLearn();
-  if($('#view-track').classList.contains('active'))renderTrack(); }
+  if($('#view-track').classList.contains('active'))renderTrack();
+  if($('#view-journey').classList.contains('active')&&window.Journey)Journey.render(); }
 
 /* ============================================================
    SAVED drawer
@@ -577,7 +810,18 @@ function wirePad(cb){ $$('#pad button[data-d]').forEach(b=>b.onclick=()=>{vibrat
 function bootApp(){
   $('#shell').style.display='block';
   rebuildFeed();
-  go('read');
+
+  // deep link: ?view=learn, notification taps, home-screen shortcuts
+  const want=new URLSearchParams(location.search).get('view');
+  go(['read','journey','learn','track','me'].includes(want)?want:'read');
+
+  Push.register().then(()=>Push.scheduleLocal());
+  setupInstall();
+
+  // pull anything a second device added while we were away
+  if(window.Sync&&Sync.ready()&&Sync.signedIn()){
+    Sync.firstSync().then(()=>refreshChrome()).catch(()=>{});
+  }
   refreshCount();
 }
 function refreshCount(){ /* saved count no longer shown as number; keep hook */ }
