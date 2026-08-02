@@ -23,7 +23,7 @@ Static site — no build step, works offline, installs to your home screen.
   you've opened once is yours offline. The road tracks **two** things: chapters read (gold) and
   verses memorized (green), with a badge on each book showing how many of its verses you've
   hidden and a shortcut to memorize straight from that book.
-- **Learn** — "Hide the Word." SM-2-lite spaced repetition over a 127-verse deck split into
+- **Learn** — "Memorize The Word." SM-2-lite spaced repetition over a 127-verse deck split into
   **11 themed packs** (Foundations, Trust & Fear, Anxiety & Rest, Strength, …), each with its own
   progress and its own lesson. **Six exercise types** that escalate with the card — arrange the
   verse, fill the blanks, reference match, first-letters, type it from memory (scored word for

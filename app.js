@@ -608,7 +608,7 @@ function renderLearn(){
   }).join('');
 
   $('#learn-body').innerHTML=`
-    <div class="page-h"><div class="eyebrow">Memorize</div><h1>Hide the Word</h1>
+    <div class="page-h"><div class="eyebrow">Learn</div><h1>Memorize The Word</h1>
       <p>A few verses a day. Spaced so they actually stick.</p></div>
 
     <div class="rank-card gc">
