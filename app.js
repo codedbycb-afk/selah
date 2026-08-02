@@ -41,7 +41,73 @@ const svg=(p,cls='')=>`<svg class="${cls}" viewBox="0 0 24 24" fill="none" strok
 const archSVG=`<svg viewBox="0 0 40 48" fill="none"><path d="M20 2C8 10 2 22 2 46H38C38 22 32 10 20 2Z" stroke="var(--gold)" stroke-width="1.2" opacity=".85"/><path d="M20 11C12 17 8 27 8 46H32C32 27 28 17 20 11Z" stroke="var(--gold)" stroke-width=".7" opacity=".4"/></svg>`;
 const heartFill='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.35-9.5-8.5C.5 9 2 5.5 5.2 5.5c1.9 0 3.1 1.1 3.8 2.1.7-1 1.9-2.1 3.8-2.1C16 5.5 17.5 9 15.5 12.5 13 16.65 12 21 12 21z"/></svg>';
 
-/* ---------- jewel fields (stained glass) ---------- */
+/* ---------- the windows ----------
+   30 cathedral windows, each a scene. A verse is matched to a window that
+   tells its story where one exists, and falls back to the whole set otherwise.
+   The pick is hashed off the reference so a verse always gets the same window. */
+const WINDOWS=[
+ {f:'01-creation',        t:'The Creation of Light',   b:['Genesis','Psalms','John']},
+ {f:'02-noah',            t:'Noah’s Ark',              b:['Genesis']},
+ {f:'03-jacobs-ladder',   t:'Jacob’s Ladder',          b:['Genesis','John']},
+ {f:'04-burning-bush',    t:'The Burning Bush',        b:['Exodus']},
+ {f:'05-red-sea',         t:'The Parting of the Sea',  b:['Exodus','Isaiah']},
+ {f:'06-ten-commandments',t:'The Commandments',        b:['Exodus','Deuteronomy','Leviticus','Numbers']},
+ {f:'07-david-goliath',   t:'David and Goliath',       b:['1 Samuel','2 Samuel','Psalms']},
+ {f:'08-daniel-lions',    t:'Daniel in the Lions’ Den',b:['Daniel','Habakkuk']},
+ {f:'09-jonah',           t:'Jonah and the Great Fish',b:['Jonah','Nahum']},
+ {f:'10-annunciation',    t:'The Annunciation',        b:['Luke','Isaiah']},
+ {f:'11-nativity',        t:'The Nativity',            b:['Luke','Matthew','Micah']},
+ {f:'12-baptism',         t:'The Baptism of Christ',   b:['Matthew','Mark','Titus']},
+ {f:'13-sermon-mount',    t:'The Sermon on the Mount', b:['Matthew']},
+ {f:'14-cana',            t:'The Wedding at Cana',     b:['John']},
+ {f:'15-calming-storm',   t:'Christ Calming the Storm',b:['Mark','Matthew','Psalms']},
+ {f:'16-feeding-5000',    t:'The Feeding of the Five Thousand',b:['John','Mark','Luke']},
+ {f:'17-walking-water',   t:'Walking on the Water',    b:['Matthew','John']},
+ {f:'18-good-shepherd',   t:'The Good Shepherd',       b:['John','Psalms','Ezekiel']},
+ {f:'19-prodigal-son',    t:'The Prodigal Son',        b:['Luke','Hosea','Joel']},
+ {f:'20-good-samaritan',  t:'The Good Samaritan',      b:['Luke','James','1 John']},
+ {f:'21-sower',           t:'The Sower',               b:['Matthew','Mark','Galatians','2 Corinthians']},
+ {f:'22-lazarus',         t:'The Raising of Lazarus',  b:['John','Ezekiel']},
+ {f:'23-triumphal-entry', t:'The Triumphal Entry',     b:['Matthew','Mark','Zechariah']},
+ {f:'24-last-supper',     t:'The Last Supper',         b:['Luke','John','1 Corinthians']},
+ {f:'25-gethsemane',      t:'The Garden of Gethsemane',b:['Matthew','Mark','Hebrews','Lamentations']},
+ {f:'26-crucifixion',     t:'The Crucifixion',         b:['Isaiah','Romans','Galatians','Colossians','1 Peter']},
+ {f:'27-resurrection',    t:'The Resurrection',        b:['Matthew','Mark','Luke','1 Corinthians','Philippians']},
+ {f:'28-emmaus',          t:'The Road to Emmaus',      b:['Luke','Proverbs','Ecclesiastes']},
+ {f:'29-pentecost',       t:'Pentecost',               b:['Acts','Joel','Ephesians','2 Timothy']},
+ {f:'30-new-jerusalem',   t:'The New Jerusalem',       b:['Revelation','Jeremiah','Hebrews','1 Thessalonians','2 Thessalonians']},
+];
+/* The feed writes "Psalm 23:1" but the canon lists the book as "Psalms".
+   Everything downstream keys off this, so normalise once, here. */
+const BOOK_ALIAS={'Psalm':'Psalms','Song of Songs':'Song of Solomon','Canticles':'Song of Solomon'};
+const bookOf=ref=>{
+  const b=String(ref).replace(/\s+\d+:\d+(-\d+)?$/,'').trim();
+  return BOOK_ALIAS[b]||b;
+};
+const hashRef=s=>{let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return Math.abs(h);};
+/* Passages everybody already pictures a certain way get the right window,
+   rather than whatever the hash lands on. */
+const VERSE_PINS={
+  'John 3:16':'26-crucifixion',
+  'Genesis 1':'01-creation',      'Genesis 28':'03-jacobs-ladder',
+  'Exodus 3':'04-burning-bush',   'Exodus 14':'05-red-sea',   'Exodus 20':'06-ten-commandments',
+  'Psalm 23':'18-good-shepherd',  'John 10':'18-good-shepherd',
+  'Isaiah 53':'26-crucifixion',
+  'Matthew 5':'13-sermon-mount',  'Matthew 6':'13-sermon-mount',  'Matthew 7':'13-sermon-mount',
+  'Luke 10':'20-good-samaritan',  'Luke 15':'19-prodigal-son',    'Luke 24':'28-emmaus',
+  'John 2':'14-cana',             'John 11':'22-lazarus',
+  'Acts 2':'29-pentecost',        'Revelation 21':'30-new-jerusalem',
+};
+function windowFor(ref){
+  const pin=VERSE_PINS[ref]||VERSE_PINS[String(ref).replace(/:\d+(-\d+)?$/,'')];
+  if(pin){ const w=WINDOWS.find(x=>x.f===pin); if(w) return w; }
+  const bk=bookOf(ref);
+  const fit=WINDOWS.filter(w=>w.b.includes(bk));
+  const pool=fit.length?fit:WINDOWS;
+  return pool[hashRef(ref)%pool.length];
+}
+
+/* ---------- jewel fields (kept as the glow tint behind each window) ---------- */
 const FIELDS=[
  {field:"linear-gradient(165deg,#0c1440 0%,#1c2a78 55%,#0a0f30 100%)",glow:"rgba(90,130,255,.5)"},   // sapphire
  {field:"linear-gradient(165deg,#3a0a14 0%,#7d1826 55%,#2a060d 100%)",glow:"rgba(255,120,120,.42)"},  // ruby
@@ -108,17 +174,19 @@ const savedList=()=>DB.get('saved',[]);
 const isSaved=ref=>savedList().some(s=>s[0]===ref);
 
 function makePane(ref,text){
-  const el=document.createElement('article'); el.className='pane';
+  const el=document.createElement('article'); el.className='pane photo';
   const f=FIELDS[served%FIELDS.length];
+  const win=windowFor(ref);
   el.style.setProperty('--field',f.field); el.style.setProperty('--glow',f.glow);
+  el.style.setProperty('--win',`url("assets/windows/${win.f}.jpg")`);
   el.dataset.ref=ref; el.dataset.web=text;
   const first=text.charAt(0), rest=text.slice(1);
   el.innerHTML=`
-    <div class="field"></div><div class="lead"></div><div class="frost"></div>
+    <div class="field"></div><div class="glass"></div><div class="frost"></div><div class="scrim"></div>
     <div class="content">
       <div class="arch">${archSVG}<span class="ref caps">${ref}</span></div>
       <p class="verse"><span class="drop">${first}</span>${rest}</p>
-      <p class="trans caps">${TRANSLATIONS[settings().translation].name}</p>
+      <p class="trans caps">${TRANSLATIONS[settings().translation].name} <span class="dot-sep">·</span> ${win.t}</p>
     </div>
     <div class="rail">
       <button class="save ${isSaved(ref)?'on':''}" aria-label="Keep">${svg(IC.heart)}<span class="lab">Keep</span></button>
@@ -221,35 +289,86 @@ function grade(ref,q){
   }
   saveCard(ref,c); return c;
 }
-function dueCards(){
-  const now=Date.now();
-  const due=MEMORY_VERSES.filter(v=>{const c=card(v.ref);return c.reps>0&&c.due<=now;});
-  const fresh=MEMORY_VERSES.filter(v=>card(v.ref).reps===0);
+/* a lesson can be the whole deck, one pack, or one book of the Bible */
+function scopedDeck(scope){
+  if(!scope) return MEMORY_VERSES;
+  if(scope.pack) return MEMORY_VERSES.filter(v=>v.pack===scope.pack);
+  if(scope.book) return MEMORY_VERSES.filter(v=>bookOf(v.ref)===scope.book);
+  return MEMORY_VERSES;
+}
+function dueCards(scope){
+  const now=Date.now(); const pool=scopedDeck(scope);
+  const due=pool.filter(v=>{const c=card(v.ref);return c.reps>0&&c.due<=now;});
+  const fresh=pool.filter(v=>card(v.ref).reps===0);
   return {due,fresh};
 }
 function verseText(v){ const t=settings().translation; return v[t]||v.web||v.kjv; }
+
+/* ---------- learning progress, sliced every way the app needs it ---------- */
+const isMastered =v=>card(v.ref).ivl>=21;
+const isLearning =v=>{const c=card(v.ref);return c.reps>0&&c.ivl<21;};
+const packVerses =id=>MEMORY_VERSES.filter(v=>v.pack===id);
+const bookVerses =b=>MEMORY_VERSES.filter(v=>bookOf(v.ref)===b);
+const countMastered=list=>list.filter(isMastered).length;
+const countLearning=list=>list.filter(isLearning).length;
+const packById=id=>(window.PACKS||[]).find(p=>p.id===id)||{id,label:id,sub:''};
+
+/* ---------- rank: the long game, so the deck has a horizon ---------- */
+const RANKS=[
+  {at:0,  name:'Seedling',   sub:'Just planted'},
+  {at:5,  name:'Rooted',     sub:'It’s taking hold'},
+  {at:15, name:'Watered',    sub:'Growing steady'},
+  {at:30, name:'Branching',  sub:'It’s spreading'},
+  {at:50, name:'Fruitful',   sub:'Bearing fruit'},
+  {at:80, name:'Deep Roots', sub:'Hard to shake now'},
+  {at:110,name:'Oak',        sub:'Planted by the water'},
+];
+function rankNow(){
+  const n=masteredCount(); let cur=RANKS[0], next=RANKS[1];
+  RANKS.forEach((x,i)=>{ if(n>=x.at){ cur=x; next=RANKS[i+1]||null; } });
+  return {cur,next,n};
+}
+
+/* ---------- speak it out loud (free, on-device) ---------- */
+function speak(t){
+  try{
+    if(!window.speechSynthesis) return toast('No voice on this device');
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(t);
+    u.rate=.88; u.pitch=1;
+    speechSynthesis.speak(u);
+  }catch(e){ toast('No voice on this device'); }
+}
+const normalize=t=>t.toLowerCase().replace(/[’']/g,'').replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
 
 /* ============================================================
    LESSON RUNNER
    ============================================================ */
 let LS=null;
-function startLesson(){
-  const {due,fresh}=dueCards();
+function startLesson(scope){
+  const {due,fresh}=dueCards(scope);
   let queue=[...due, ...fresh.slice(0,4)];
-  if(queue.length===0) queue=shuffle(MEMORY_VERSES).slice(0,5); // practice
+  if(queue.length===0) queue=shuffle(scopedDeck(scope)).slice(0,5); // practice run
   queue=shuffle(queue).slice(0,8);
-  LS={queue,idx:0,total:queue.length,xp:0,hearts:5,correct:0};
+  if(!queue.length) return toast('Nothing in that set yet');
+  LS={queue,idx:0,total:queue.length,xp:0,hearts:5,correct:0,scope:scope||null};
+  $('#sheet').classList.remove('open'); $('#bookSheet').classList.remove('open');
   $('#lesson').classList.add('open');
   renderQ();
 }
 function endLessonEarly(){ $('#lesson').classList.remove('open'); LS=null; }
 function tokens(t){ return t.replace(/\s+/g,' ').trim().split(' '); }
 
+/* The exercise escalates with the card: recognise it, then fill it in, then
+   produce it from nothing. Six types so a long session never feels the same. */
 function pickKind(v){
   const c=card(v.ref); const n=tokens(verseText(v)).length;
   if(c.reps===0) return n<=12?'order':'blank';
-  if(c.reps<3) return n<=14?'blank':'recall';
-  return Math.random()<0.5?'recall':'match';
+  if(c.reps===1) return 'blank';
+  if(c.reps===2) return n<=18?'first':'blank';
+  if(c.reps===3) return Math.random()<.5?'match':'first';
+  if(c.reps===4) return n<=20?'type':'recall';
+  return ['recall','type','first','match'][Math.floor(Math.random()*4)];
 }
 function renderQ(){
   if(!LS) return;
@@ -263,6 +382,8 @@ function renderQ(){
   if(kind==='order') return qOrder(v,txt,body,foot);
   if(kind==='blank') return qBlank(v,txt,body,foot);
   if(kind==='match') return qMatch(v,txt,body,foot);
+  if(kind==='first') return qFirst(v,txt,body,foot);
+  if(kind==='type')  return qType(v,txt,body,foot);
   return qRecall(v,txt,body,foot);
 }
 function nextQ(){ LS.idx++; renderQ(); }
@@ -340,21 +461,92 @@ function qMatch(v,txt,body,foot){
   LS.locked=false;
   foot.innerHTML=`<div class="feedback" id="feedback"></div>`;
 }
-/* --- recall + self-rate --- */
-function qRecall(v,txt,body,foot){
-  body.innerHTML=`<div class="q-kind">Recall from memory</div><div class="q-ref caps">${v.ref}</div>
-    <p style="color:var(--ink-dim);font-size:1.15rem">Say it in your head, then reveal.</p>
+/* --- first letters: the classic memorisation crutch --- */
+function qFirst(v,txt,body,foot){
+  const skeleton=tokens(txt).map(w=>{
+    const m=w.match(/^([^A-Za-z]*)([A-Za-z])/);
+    const punct=(w.match(/[.,;:!?”"]+$/)||[''])[0];
+    return m ? `<i>${m[1]}${m[2]}</i>${punct}` : w;
+  }).join(' ');
+  body.innerHTML=`<div class="q-kind">First letters</div><div class="q-ref caps">${v.ref}</div>
+    <div class="skeleton">${skeleton}</div>
+    <p class="q-hint">Say the whole verse out loud from these, then reveal.</p>
     <div id="rev"></div>`;
   foot.innerHTML=`<button class="cta" id="revealBtn">Reveal</button>`;
   $('#revealBtn').onclick=()=>{
     $('#rev',body).innerHTML=`<div class="reveal">“${txt}”</div>`;
-    foot.innerHTML=`<div class="rate">
+    selfRate(foot,txt);
+  };
+}
+
+/* --- type it out --- */
+function qType(v,txt,body,foot){
+  body.innerHTML=`<div class="q-kind">Type it from memory</div><div class="q-ref caps">${v.ref}</div>
+    <textarea class="type-in" id="typeIn" rows="4" placeholder="Word for word…"
+      autocapitalize="sentences" autocorrect="off" spellcheck="false"></textarea>
+    <div id="typeOut"></div>`;
+  foot.innerHTML=`<button class="cta" id="checkBtn">Check</button>
+    <button class="cta ghost sm" id="skipType" style="margin-top:10px">I can’t remember</button>`;
+  const ta=$('#typeIn',body); setTimeout(()=>ta.focus(),120);
+  const judge=()=>{
+    const said=normalize(ta.value), want=normalize(txt);
+    if(!said) return;
+    const a=said.split(' '), b=want.split(' ');
+    let hit=0; const pool=[...b];
+    a.forEach(w=>{ const i=pool.indexOf(w); if(i>=0){hit++;pool.splice(i,1);} });
+    const acc=hit/Math.max(b.length,1);
+    // mark the words they actually got, so the miss is visible
+    const marked=b.map((w,i)=>a[i]===w?`<b>${w}</b>`:`<u>${w}</u>`).join(' ');
+    $('#typeOut',body).innerHTML=
+      `<div class="reveal small">${marked}</div>
+       <div class="acc ${acc>=.9?'good':acc>=.65?'ok':'bad'}">${Math.round(acc*100)}% word for word</div>`;
+    ta.disabled=true;
+    // this exercise renders its own verdict into the footer below — calling
+    // showFeedback() here would hit a #feedback node that doesn't exist yet
+    if(acc>=.9){ reward('good'); vibrate(10); }
+    else if(acc>=.65){ reward('hard'); vibrate(8); }
+    else { reward('again'); LS.hearts=Math.max(0,LS.hearts-1); $('#hearts-n').textContent=LS.hearts; vibrate([20,40,20]); }
+    foot.innerHTML=`<div class="feedback show ${acc>=.9?'good':'bad'}">
+        <b>${acc>=.9?'Word for word ✦':acc>=.65?'Close':'Not yet'}</b><small>${v.ref}</small></div>
+      <button class="cta" id="contBtn">Continue</button>
+      <button class="cta ghost sm" id="hearBtn" style="margin-top:10px">Hear it</button>`;
+    $('#contBtn').onclick=nextQ;
+    $('#hearBtn').onclick=()=>speak(txt);
+  };
+  $('#checkBtn').onclick=judge;
+  $('#skipType').onclick=()=>{
+    ta.value=''; ta.disabled=true;
+    $('#typeOut',body).innerHTML=`<div class="reveal small">“${txt}”</div>`;
+    reward('again'); selfRateDone(foot,txt);
+  };
+}
+
+/* --- recall + self-rate --- */
+function qRecall(v,txt,body,foot){
+  body.innerHTML=`<div class="q-kind">Recall from memory</div><div class="q-ref caps">${v.ref}</div>
+    <p class="q-hint">Say it in your head, then reveal.</p>
+    <div id="rev"></div>`;
+  foot.innerHTML=`<button class="cta" id="revealBtn">Reveal</button>`;
+  $('#revealBtn').onclick=()=>{
+    $('#rev',body).innerHTML=`<div class="reveal">“${txt}”</div>`;
+    selfRate(foot,txt);
+  };
+}
+function selfRate(foot,txt){
+  foot.innerHTML=`<div class="rate">
       <button data-q="again">Again<small>blanked</small></button>
       <button data-q="hard">Hard<small>barely</small></button>
       <button data-q="good">Good<small>got it</small></button>
-      <button data-q="easy">Easy<small>perfect</small></button></div>`;
-    $$('.rate button',foot).forEach(b=>b.onclick=()=>{ reward(b.dataset.q); vibrate(8); nextQ(); });
-  };
+      <button data-q="easy">Easy<small>perfect</small></button></div>
+    <button class="cta ghost sm" id="hearBtn" style="margin-top:12px">Hear it</button>`;
+  $$('.rate button',foot).forEach(b=>b.onclick=()=>{ reward(b.dataset.q); vibrate(8); nextQ(); });
+  $('#hearBtn').onclick=()=>speak(txt);
+}
+function selfRateDone(foot,txt){
+  foot.innerHTML=`<button class="cta" id="contBtn">Continue</button>
+    <button class="cta ghost sm" id="hearBtn" style="margin-top:10px">Hear it</button>`;
+  $('#contBtn').onclick=nextQ;
+  $('#hearBtn').onclick=()=>speak(txt);
 }
 /* finalize auto-graded exercises */
 function finalize(good,answer){
@@ -393,9 +585,42 @@ function renderLearn(){
   const goal=settings().goal, tXP=todayXP();
   const pct=Math.min(1,tXP/goal);
   const c=2*Math.PI*32;
+  const {cur,next,n}=rankNow();
+  const total=MEMORY_VERSES.length;
+  const toNext=next?next.at-n:0;
+  const rankPct=next?Math.min(1,(n-cur.at)/(next.at-cur.at)):1;
+
+  const packCards=(window.PACKS||[]).map(p=>{
+    const vs=packVerses(p.id); if(!vs.length) return '';
+    const m=countMastered(vs), l=countLearning(vs);
+    const pp=vs.length?m/vs.length:0;
+    const state=m>=vs.length?'done':(m+l)>0?'active':'';
+    return `<button class="pack ${state}" data-pack="${p.id}">
+        <div class="pack-top">
+          <div class="pack-name caps">${p.label}</div>
+          <div class="pack-n">${m}<span>/${vs.length}</span></div>
+        </div>
+        <div class="pack-sub">${p.sub}</div>
+        <div class="pack-bar"><i style="width:${Math.max(pp*100,pp>0?4:0)}%"></i></div>
+        ${state==='done'?'<div class="pack-seal caps">✦ Hidden</div>':
+          l>0?`<div class="pack-meta">${l} in progress</div>`:''}
+      </button>`;
+  }).join('');
+
   $('#learn-body').innerHTML=`
     <div class="page-h"><div class="eyebrow">Memorize</div><h1>Hide the Word</h1>
       <p>A few verses a day. Spaced so they actually stick.</p></div>
+
+    <div class="rank-card gc">
+      <div class="rank-row">
+        <div class="rank-mark caps">${cur.name.charAt(0)}</div>
+        <div class="rank-who"><b class="caps">${cur.name}</b><span>${cur.sub}</span></div>
+        <div class="rank-n"><b>${n}</b><span>of ${total}</span></div>
+      </div>
+      <div class="pack-bar lg"><i style="width:${Math.max(rankPct*100,2)}%"></i></div>
+      <div class="rank-next">${next?`${toNext} more verse${toNext===1?'':'s'} to <b>${next.name}</b>`:'Every verse in the deck is hidden in your heart ✦'}</div>
+    </div>
+
     <div class="goal-ring">
       <svg viewBox="0 0 74 74"><circle cx="37" cy="37" r="32" stroke="rgba(230,196,115,.14)" stroke-width="7" fill="none"/>
         <circle cx="37" cy="37" r="32" stroke="url(#gg)" stroke-width="7" fill="none" stroke-linecap="round"
@@ -403,20 +628,58 @@ function renderLearn(){
         <defs><linearGradient id="gg" x1="0" x2="1"><stop offset="0" stop-color="#c79a3c"/><stop offset="1" stop-color="#e6c473"/></linearGradient></defs></svg>
       <div class="t"><b>${tXP} / ${goal} XP today</b><span>${pct>=1?'Daily goal complete ✦':'Keep going'}</span></div>
     </div>
+
     <div class="streak-band">
       <div class="stat-chip"><div class="n">${streakCount()}</div><div class="k">Day streak</div></div>
       <div class="stat-chip"><div class="n">${dueN}</div><div class="k">Due now</div></div>
-      <div class="stat-chip"><div class="n">${masteredCount()}</div><div class="k">Mastered</div></div>
+      <div class="stat-chip"><div class="n">${learningCount()}</div><div class="k">Learning</div></div>
     </div>
+
     <button class="cta" id="startBtn">${dueN+newN>0?`Start lesson · ${dueN+newN} cards`:'Practice'}</button>
+
     <div class="deck">
-      <h3>Your verses</h3>
-      ${MEMORY_VERSES.map(v=>{ const cc=card(v.ref); const st=cc.ivl>=21?'mastered':cc.reps>0?'learning':'';
-        const due=cc.reps===0?'New':cc.ivl>=21?'Mastered':cc.due<=Date.now()?'Due':`${Math.ceil((cc.due-Date.now())/86400000)}d`;
-        return `<div class="vrow"><span class="dot ${st}"></span><div class="r"><b>${v.ref}</b><span>${verseText(v)}</span></div><span class="due">${due}</span></div>`;
-      }).join('')}
+      <h3>Packs</h3>
+      <div class="packs">${packCards}</div>
+    </div>
+
+    <div class="deck">
+      <h3>Everything due soon</h3>
+      ${(due.length?due:fresh).slice(0,12).map(v=>vrow(v)).join('')
+        || `<div class="empty" style="padding:6vh 10px"><b>All caught up</b>Nothing is due. Start a pack to learn something new.</div>`}
     </div>`;
-  $('#startBtn').onclick=startLesson;
+  $('#startBtn').onclick=()=>startLesson();
+  $$('#learn-body .pack').forEach(b=>b.onclick=()=>openPack(b.dataset.pack));
+}
+
+function vrow(v){
+  const cc=card(v.ref); const st=cc.ivl>=21?'mastered':cc.reps>0?'learning':'';
+  const d=cc.reps===0?'New':cc.ivl>=21?'Hidden':cc.due<=Date.now()?'Due':`${Math.ceil((cc.due-Date.now())/86400000)}d`;
+  return `<div class="vrow"><span class="dot ${st}"></span><div class="r"><b>${v.ref}</b>
+    <span>${verseText(v)}</span></div><span class="due">${d}</span></div>`;
+}
+
+/* ---------- a pack, opened ---------- */
+function openPack(id){
+  const p=packById(id), vs=packVerses(id);
+  const m=countMastered(vs), l=countLearning(vs);
+  $('#bookSheet').innerHTML=`
+    <div class="sheet-h">
+      <div><h2 class="caps">${p.label}</h2><small>${p.sub} · ${m} of ${vs.length} hidden</small></div>
+      <button class="x" id="closePack">×</button>
+    </div>
+    <div class="body">
+      <div class="pack-bar lg" style="margin-bottom:20px"><i style="width:${Math.max(vs.length?m/vs.length*100:0,2)}%"></i></div>
+      <div class="streak-band">
+        <div class="stat-chip"><div class="n">${m}</div><div class="k">Hidden</div></div>
+        <div class="stat-chip"><div class="n">${l}</div><div class="k">Learning</div></div>
+        <div class="stat-chip"><div class="n">${vs.length-m-l}</div><div class="k">Untouched</div></div>
+      </div>
+      <button class="cta" id="packStart">${m>=vs.length?'Review this pack':'Learn this pack'}</button>
+      <div class="deck">${vs.map(v=>vrow(v)).join('')}</div>
+    </div>`;
+  $('#bookSheet').classList.add('open');
+  $('#closePack').onclick=()=>$('#bookSheet').classList.remove('open');
+  $('#packStart').onclick=()=>startLesson({pack:id});
 }
 
 /* ============================================================

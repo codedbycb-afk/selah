@@ -360,6 +360,43 @@ img{max-width:100%;}
 @keyframes hintPulse{0%,100%{opacity:.3;transform:translateY(0);}50%{opacity:.85;transform:translateY(4px);}}
 
 /* ============================================================
+   THE HOUSE — leaded glass behind every page, not just the feed
+   ============================================================ */
+body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background-image:url("assets/glass-bg.jpg");background-size:cover;background-position:center;
+  opacity:.16;}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(120% 80% at 50% 0%, rgba(230,196,115,.07), transparent 55%),
+             radial-gradient(100% 60% at 50% 100%, rgba(0,0,0,.6), transparent 60%);}
+.view .scroll{background:transparent;}
+/* a hairline of gold under every page title, like the base of a window */
+.page-h{padding-bottom:16px;border-bottom:1px solid rgba(230,196,115,.14);}
+
+/* ============================================================
+   THE WINDOWS — a real cathedral window behind every verse
+   ============================================================ */
+.pane.photo{justify-content:flex-end;}          /* let the glass breathe, text sits low */
+.pane.photo .glass{position:absolute;inset:0;z-index:0;
+  background-image:var(--win);background-size:cover;background-position:center 38%;
+  animation:kenburns 26s ease-in-out infinite alternate;}
+@keyframes kenburns{from{transform:scale(1.02);}to{transform:scale(1.11);}}
+/* the jewel tint bleeds through the leading, tying every window to one palette */
+.pane.photo .field{background:var(--field);opacity:.32;mix-blend-mode:color;z-index:1;}
+.pane.photo .field::before{opacity:.5;}
+.pane.photo .frost{z-index:2;box-shadow:inset 0 0 200px 60px rgba(0,0,0,.72);}
+/* the scrim is what makes the type readable no matter what the glass is doing */
+.pane.photo .scrim{position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:linear-gradient(to bottom,
+    rgba(4,4,9,.74) 0%, rgba(4,4,9,.20) 24%, rgba(4,4,9,.42) 46%,
+    rgba(4,4,9,.82) 64%, rgba(4,4,9,.95) 80%, rgba(4,4,9,.98) 100%);}
+.pane.photo > .content{z-index:3;}
+.pane.photo .verse{font-size:clamp(1.6rem,3.9vw + .9rem,2.7rem);
+  text-shadow:0 2px 24px rgba(0,0,0,.95), 0 0 60px rgba(0,0,0,.7);}
+.pane.photo .trans{opacity:0;}
+.pane.photo.live .trans{animation:fade .9s .5s ease forwards;}
+.dot-sep{opacity:.5;margin:0 .3em;}
+
+/* ============================================================
    JOURNEY — the road from Genesis to Revelation
    ============================================================ */
 #view-journey .scroll{padding-top:calc(env(safe-area-inset-top) + 26px);}
@@ -433,6 +470,81 @@ img{max-width:100%;}
 .j-finished{text-align:center;color:var(--gold);letter-spacing:.2em;text-transform:uppercase;font-size:.72rem;padding:18px;
   border:1px solid var(--line);border-radius:14px;background:rgba(230,196,115,.06);}
 .sheet-h small{display:block;color:var(--ink-dim);font-size:.8rem;margin-top:5px;}
+
+/* ============================================================
+   LEARN — rank, packs, new exercises
+   ============================================================ */
+.rank-card{padding:18px;margin-bottom:18px;}
+.rank-row{display:flex;align-items:center;gap:14px;margin-bottom:14px;position:relative;z-index:1;}
+.rank-mark{width:52px;height:52px;flex:none;border-radius:14px;display:flex;align-items:center;justify-content:center;
+  font-size:1.5rem;color:#1a1406;background:linear-gradient(150deg,var(--gold),var(--gold-2));
+  box-shadow:0 6px 18px rgba(230,196,115,.24);}
+.rank-who{flex:1;min-width:0;}
+.rank-who b{display:block;font-size:1.15rem;letter-spacing:.05em;}
+.rank-who span{color:var(--ink-dim);font-size:.88rem;}
+.rank-n{text-align:right;flex:none;}
+.rank-n b{display:block;font-family:"Cinzel",serif;font-size:1.5rem;color:var(--gold);line-height:1;}
+.rank-n span{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);
+  font-family:ui-sans-serif,system-ui,sans-serif;}
+.rank-next{margin-top:10px;color:var(--ink-dim);font-size:.9rem;position:relative;z-index:1;}
+.rank-next b{color:var(--gold);}
+
+.pack-bar{height:8px;border-radius:999px;background:rgba(230,196,115,.12);overflow:hidden;
+  border:1px solid var(--line);position:relative;z-index:1;}
+.pack-bar.lg{height:11px;}
+.pack-bar i{display:block;height:100%;border-radius:999px;
+  background:linear-gradient(90deg,var(--gold-2),var(--gold));transition:width .5s cubic-bezier(.2,.8,.2,1);}
+
+.packs{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.pack{all:unset;box-sizing:border-box;cursor:pointer;padding:15px;border-radius:15px;
+  border:1px solid var(--line);background:linear-gradient(160deg,rgba(230,196,115,.05),rgba(20,20,32,.55));
+  display:flex;flex-direction:column;gap:7px;}
+.pack:active{transform:translateY(1px);}
+.pack-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
+.pack-name{font-size:.82rem;letter-spacing:.05em;line-height:1.2;}
+.pack-n{font-family:"Cinzel",serif;color:var(--gold);font-size:1.05rem;flex:none;}
+.pack-n span{font-size:.72rem;color:var(--ink-dim);}
+.pack-sub{color:var(--ink-dim);font-size:.82rem;line-height:1.35;min-height:2.2em;}
+.pack-meta{font-size:.68rem;color:var(--gold);opacity:.8;font-family:ui-sans-serif,system-ui,sans-serif;}
+.pack-seal{font-size:.6rem;letter-spacing:.18em;color:var(--gold);}
+.pack.active{border-color:rgba(230,196,115,.34);}
+.pack.done{border-color:rgba(230,196,115,.55);
+  background:linear-gradient(160deg,rgba(230,196,115,.13),rgba(20,20,32,.55));
+  box-shadow:0 0 22px rgba(230,196,115,.14);}
+
+/* first-letter skeleton */
+.skeleton{font-size:1.55rem;line-height:1.9;letter-spacing:.14em;color:var(--ink-dim);margin-bottom:18px;}
+.skeleton i{font-style:normal;color:var(--gold);font-family:"Cinzel",serif;}
+.q-hint{color:var(--ink-dim);font-size:1.02rem;line-height:1.5;}
+
+/* type it out */
+.type-in{width:100%;box-sizing:border-box;font-family:"Cormorant Garamond",Georgia,serif;font-size:1.3rem;
+  line-height:1.5;color:var(--ink);background:rgba(20,20,32,.7);border:1px solid var(--line);
+  border-radius:13px;padding:15px;resize:none;margin-bottom:14px;}
+.type-in:focus{outline:none;border-color:var(--gold-2);}
+.type-in:disabled{opacity:.5;}
+.reveal.small{font-size:1.12rem;line-height:1.6;}
+.reveal b{color:var(--ink);font-weight:500;}
+.reveal u{color:#e59b93;text-decoration:none;border-bottom:1px dashed rgba(229,155,147,.6);}
+.acc{margin-top:10px;font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;
+  font-family:ui-sans-serif,system-ui,sans-serif;}
+.acc.good{color:#7fd4b3;} .acc.ok{color:var(--gold);} .acc.bad{color:#e59b93;}
+
+/* memorization bars read gold-green so they never read as "chapters" */
+.j-bar.mem i{background:linear-gradient(90deg,#3f8f72,#7fd4b3);box-shadow:0 0 14px rgba(127,212,179,.35);}
+.j-track{margin-bottom:14px;position:relative;z-index:1;}
+.j-track-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:7px;}
+.j-track-h b{font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);}
+.j-track-h span{font-size:.8rem;color:var(--ink-dim);
+  font-family:ui-sans-serif,system-ui,sans-serif;}
+.j-cta2{display:flex;gap:10px;position:relative;z-index:1;}
+.j-cta2 .cta{flex:1;font-size:.72rem;letter-spacing:.1em;padding:16px 8px;}
+/* verses-hidden badge on a book medallion */
+.j-node .mem{position:absolute;top:-6px;right:22px;z-index:2;
+  background:linear-gradient(150deg,#7fd4b3,#3f8f72);color:#06231a;
+  font-family:ui-sans-serif,system-ui,sans-serif;font-size:.58rem;font-weight:700;
+  padding:2px 6px;border-radius:999px;border:1.5px solid rgba(6,10,8,.85);
+  box-shadow:0 2px 8px rgba(0,0,0,.6);}
 
 /* ============================================================
    READER

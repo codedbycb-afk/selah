@@ -180,28 +180,45 @@ function renderJourney(){
     const b=r.b, done=bookRead(b), pct=done/b.chapters;
     const state = done>=b.chapters ? 'done' : (b.i<=cur.i ? 'open' : 'locked');
     const deg=Math.round(pct*360);
+    const mem=countMastered(bookVerses(b.name));      // verses hidden from this book
     return `<button class="j-node ${state}" data-book="${b.name}"
         style="top:${r.y}px;left:calc(50% + ${r.x}%);--deg:${deg}deg;--glass:${DIVISIONS[b.div].glass}">
         <span class="ring"></span>
         <span class="face">${done>=b.chapters?'✦':abbr(b.name)}</span>
+        ${mem>0?`<span class="mem" title="verses memorized">✦${mem}</span>`:''}
         <span class="nm">${b.name}</span>
         ${state!=='locked'?`<span class="cnt">${done}/${b.chapters}</span>`:''}
       </button>`;
   }).join('');
 
   const pctAll=journeyPct();
+  const memAll=masteredCount(), memTotal=MEMORY_VERSES.length;
+  const memPct=memTotal?memAll/memTotal:0;
+  const booksWithMem=BIBLE.filter(b=>countMastered(bookVerses(b.name))>0).length;
   $('#journey-body').innerHTML=`
     <div class="page-h"><div class="eyebrow">The road</div><h1>Journey</h1>
       <p>Genesis to Revelation, one chapter at a time.</p></div>
 
     <div class="j-hero gc">
-      <div class="j-hero-top">
-        <div><b class="caps">${Math.round(pctAll*1000)/10}%</b><span>of the Bible</span></div>
-        <div><b class="caps">${chaptersRead()}</b><span>of ${TOTAL_CHAPTERS} chapters</span></div>
-        <div><b class="caps">${BIBLE.filter(b=>bookRead(b)>=b.chapters).length}</b><span>books finished</span></div>
+      <div class="j-track">
+        <div class="j-track-h"><b class="caps">Read</b>
+          <span>${chaptersRead()} of ${TOTAL_CHAPTERS} chapters · ${Math.round(pctAll*1000)/10}%</span></div>
+        <div class="j-bar"><i style="width:${Math.max(pctAll*100,1.2)}%"></i></div>
       </div>
-      <div class="j-bar"><i style="width:${Math.max(pctAll*100,1.2)}%"></i></div>
-      <button class="cta" id="jContinue">Continue · ${stop.book.name} ${stop.ch}</button>
+      <div class="j-track">
+        <div class="j-track-h"><b class="caps">Memorized</b>
+          <span>${memAll} of ${memTotal} verses · ${Math.round(memPct*1000)/10}%</span></div>
+        <div class="j-bar mem"><i style="width:${Math.max(memPct*100,memAll?2:0)}%"></i></div>
+      </div>
+      <div class="j-hero-top">
+        <div><b class="caps">${BIBLE.filter(b=>bookRead(b)>=b.chapters).length}</b><span>books finished</span></div>
+        <div><b class="caps">${booksWithMem}</b><span>books touched</span></div>
+        <div><b class="caps">${streakCount()}</b><span>day streak</span></div>
+      </div>
+      <div class="j-cta2">
+        <button class="cta" id="jContinue">Read · ${stop.book.name} ${stop.ch}</button>
+        <button class="cta ghost" id="jLearn">Memorize</button>
+      </div>
     </div>
 
     <div class="j-path" style="height:${height}px">
@@ -214,6 +231,7 @@ function renderJourney(){
     </div>`;
 
   $('#jContinue').onclick=()=>openChapter(stop.book.name,stop.ch);
+  $('#jLearn').onclick=()=>go('learn');
   $$('#journey-body .j-node').forEach(n=>n.onclick=()=>{
     if(n.classList.contains('locked')){ toast('Finish the road ahead of it first'); vibrate(12); return; }
     openBook(n.dataset.book);
@@ -225,7 +243,7 @@ function renderJourney(){
 function placePilgrim(rows,cur){
   const row=rows.find(r=>r.type==='book'&&r.b.name===cur.name); if(!row) return;
   const p=$('#pilgrim'); if(!p) return;
-  p.style.top=(row.y-28)+'px';
+  p.style.top=(row.y-10)+'px';   // level with the medallion, clear of the label above
   p.style.left=`calc(50% + ${row.x}% - 46px)`;   // left of the medallion so he
                                                  // doesn't cover the progress arc
   p.innerHTML=`<img src="assets/pilgrim.png" alt="" onerror="this.parentNode.innerHTML=PILGRIM_SVG">`;
@@ -260,6 +278,8 @@ function openBook(name){
   const done=jRead()[b.name]||[];
   const chips=Array.from({length:b.chapters},(_,k)=>k+1).map(c=>
     `<button class="chip ${done.includes(c)?'on':''}" data-ch="${c}">${c}</button>`).join('');
+  const vs=bookVerses(b.name);                       // deck verses from this book
+  const mem=countMastered(vs);
   $('#bookSheet').innerHTML=`
     <div class="sheet-h">
       <div><h2 class="caps">${b.name}</h2>
@@ -271,11 +291,24 @@ function openBook(name){
       <div class="chips">${chips}</div>
       ${done.length<b.chapters?`<button class="cta" id="bookNext">Read chapter ${(()=>{for(let c=1;c<=b.chapters;c++)if(!done.includes(c))return c;})()}</button>`:
         `<div class="j-finished caps">✦ Book complete</div>`}
+
+      ${vs.length?`
+        <div class="deck">
+          <h3>Verses to hide from ${b.name}</h3>
+          <div class="j-bar sm mem"><i style="width:${Math.max(mem/vs.length*100,mem?3:0)}%"></i></div>
+          <p class="q-hint" style="margin:0 0 14px">${mem} of ${vs.length} memorized</p>
+          ${vs.map(v=>vrow(v)).join('')}
+          <button class="cta ghost" id="bookLearn" style="margin-top:16px">
+            ${mem>=vs.length?`Review ${b.name}’s verses`:`Memorize from ${b.name}`}</button>
+        </div>`:`
+        <div class="deck"><h3>Verses to hide from ${b.name}</h3>
+          <p class="q-hint">None from this book in the deck yet.</p></div>`}
     </div>`;
   $('#bookSheet').classList.add('open');
   $('#closeBook').onclick=()=>$('#bookSheet').classList.remove('open');
   $$('#bookSheet .chip').forEach(c=>c.onclick=()=>openChapter(b.name,+c.dataset.ch));
   const nx=$('#bookNext'); if(nx) nx.onclick=()=>{ for(let c=1;c<=b.chapters;c++) if(!done.includes(c)) return openChapter(b.name,c); };
+  const bl=$('#bookLearn'); if(bl) bl.onclick=()=>startLesson({book:b.name});
 }
 
 /* ============================================================

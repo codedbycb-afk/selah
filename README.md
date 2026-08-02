@@ -12,15 +12,23 @@ Static site — no build step, works offline, installs to your home screen.
 
 ## The five tabs
 
-- **Read** — infinite stained-glass verse feed (jewel-tone "windows", lancet-arch motif,
-  illuminated drop caps). Keep / Copy / Share, where Share paints a real stained-glass card.
+- **Read** — infinite verse feed, each verse set behind one of **30 cathedral windows**, every
+  one a different Bible story. A verse is matched to the window that tells its story where one
+  exists (Psalm 23 lands on the Good Shepherd, John 3:16 on the Crucifixion) and falls back to a
+  hash of the reference otherwise, so a verse always gets the same window. Keep / Copy / Share,
+  where Share paints a real stained-glass card.
 - **Journey** — the road from Genesis to Revelation. 66 book milestones on a winding path,
   1,189 chapter stones, and a little pilgrim carrying his cross who advances as you read.
   Tap a book → tap a chapter → read it → mark it. Chapters cache to IndexedDB, so anything
-  you've opened once is yours offline.
-- **Learn** — "Hide the Word." SM-2-lite spaced repetition over a ~120-verse deck with four
-  exercise types: arrange-the-verse tiles, fill-the-blank word bank, reference match, and
-  recall + self-rate. XP, hearts, daily goal ring.
+  you've opened once is yours offline. The road tracks **two** things: chapters read (gold) and
+  verses memorized (green), with a badge on each book showing how many of its verses you've
+  hidden and a shortcut to memorize straight from that book.
+- **Learn** — "Hide the Word." SM-2-lite spaced repetition over a 127-verse deck split into
+  **11 themed packs** (Foundations, Trust & Fear, Anxiety & Rest, Strength, …), each with its own
+  progress and its own lesson. **Six exercise types** that escalate with the card — arrange the
+  verse, fill the blanks, reference match, first-letters, type it from memory (scored word for
+  word), and recall + self-rate — plus a **rank** that runs Seedling → Oak across the whole deck,
+  and "Hear it" text-to-speech. XP, hearts, daily goal ring.
 - **Track** — day streak ring, XP, chapters, memorized/learning counts, longest streak,
   13-week heatmap, and the share-my-streak card.
 - **Me** — device profiles (name + avatar + optional PIN), reminders, sync, translations.

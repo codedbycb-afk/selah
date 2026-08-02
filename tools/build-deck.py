@@ -16,48 +16,69 @@ CACHE = os.path.join(HERE, ".verse-cache.json")
 DELAY = 2.1  # seconds between calls
 
 # ---------------------------------------------------------------- the deck
-# Short, high-value, memorizable. Grouped so the Learn list reads as a journey.
-DECK = [
-    # foundations
-    "Genesis 1:1", "John 3:16", "John 1:1", "John 14:6", "Romans 3:23", "Romans 6:23",
-    "Romans 5:8", "Romans 10:9", "Ephesians 2:8", "Ephesians 2:9", "Acts 4:12",
-    "1 John 1:9", "2 Corinthians 5:17", "Titus 3:5", "John 1:12",
-    # trust & fear
-    "Proverbs 3:5", "Proverbs 3:6", "Joshua 1:9", "Isaiah 41:10", "Psalm 56:3",
-    "2 Timothy 1:7", "Psalm 27:1", "Psalm 23:1", "Psalm 23:4", "Deuteronomy 31:6",
-    "Isaiah 43:2", "Psalm 46:1", "Psalm 46:10", "Psalm 91:1", "Psalm 118:6",
-    # anxiety & rest
-    "Philippians 4:6", "Philippians 4:7", "Matthew 11:28", "1 Peter 5:7",
-    "Matthew 6:34", "Psalm 55:22", "John 14:27", "Psalm 94:19", "Matthew 6:26",
-    # strength
-    "Philippians 4:13", "Isaiah 40:31", "Ephesians 6:10", "2 Corinthians 12:9",
-    "Nehemiah 8:10", "Psalm 28:7", "Habakkuk 3:19", "Isaiah 40:29",
-    # the Word & wisdom
-    "Psalm 119:105", "Psalm 119:11", "2 Timothy 3:16", "Hebrews 4:12", "Isaiah 40:8",
-    "James 1:5", "Proverbs 9:10", "Proverbs 4:23", "Proverbs 16:3", "Proverbs 27:17",
-    "Colossians 3:16", "Joshua 1:8",
-    # love & others
-    "1 Corinthians 13:4", "1 Corinthians 13:13", "1 Corinthians 16:14", "1 John 4:19",
-    "1 John 4:18", "John 13:34", "Mark 12:31", "Romans 12:10", "Ephesians 4:32",
-    "Colossians 3:13", "1 Peter 4:8", "Proverbs 15:1",
-    # walking it out
-    "Micah 6:8", "Matthew 5:14", "Matthew 5:16", "Colossians 3:23", "Galatians 5:22",
-    "Galatians 5:23", "Romans 12:2", "Romans 12:12", "James 1:22", "Hebrews 12:1",
-    "1 Corinthians 10:31", "Galatians 6:9", "Matthew 6:33", "Luke 6:31",
-    # hope & promise
-    "Jeremiah 29:11", "Romans 8:28", "Romans 8:31", "Romans 8:38", "Lamentations 3:23",
-    "Revelation 21:4", "Psalm 30:5", "Isaiah 26:3", "Romans 15:13", "Philippians 1:6",
-    "Hebrews 11:1", "2 Corinthians 5:7", "Psalm 34:18", "Psalm 147:3", "Psalm 37:4",
-    # prayer & presence
-    "Matthew 7:7", "1 Thessalonians 5:16", "1 Thessalonians 5:17", "1 Thessalonians 5:18",
-    "James 5:16", "Jeremiah 33:3", "Psalm 145:18", "Matthew 28:20", "Hebrews 13:5",
-    # identity
-    "Psalm 139:14", "Ephesians 2:10", "Galatians 2:20", "1 Peter 2:9", "John 15:5",
-    "Jeremiah 1:5", "Zephaniah 3:17", "1 John 3:1",
-    # the end of it
-    "Psalm 19:1", "Psalm 121:2", "Isaiah 53:5", "Hebrews 13:8", "Revelation 3:20",
-    "Matthew 19:26", "Luke 1:37", "Philippians 2:3", "Proverbs 18:10", "Joshua 24:15",
+# Short, high-value, memorizable — grouped into packs you work through, so the
+# Learn tab has structure instead of one 127-row wall.
+# (id, label, subtitle, [refs])
+PACKS = [
+    ("foundations", "Foundations", "Who God is and what He did", [
+        "Genesis 1:1", "John 3:16", "John 1:1", "John 14:6", "Romans 3:23", "Romans 6:23",
+        "Romans 5:8", "Romans 10:9", "Ephesians 2:8", "Ephesians 2:9", "Acts 4:12",
+        "1 John 1:9", "2 Corinthians 5:17", "Titus 3:5", "John 1:12",
+    ]),
+    ("trust", "Trust & Fear", "For when you're afraid", [
+        "Proverbs 3:5", "Proverbs 3:6", "Joshua 1:9", "Isaiah 41:10", "Psalm 56:3",
+        "2 Timothy 1:7", "Psalm 27:1", "Psalm 23:1", "Psalm 23:4", "Deuteronomy 31:6",
+        "Isaiah 43:2", "Psalm 46:1", "Psalm 46:10", "Psalm 91:1", "Psalm 118:6",
+    ]),
+    ("rest", "Anxiety & Rest", "For when you're carrying too much", [
+        "Philippians 4:6", "Philippians 4:7", "Matthew 11:28", "1 Peter 5:7",
+        "Matthew 6:34", "Psalm 55:22", "John 14:27", "Psalm 94:19", "Matthew 6:26",
+    ]),
+    ("strength", "Strength", "For when you're running on empty", [
+        "Philippians 4:13", "Isaiah 40:31", "Ephesians 6:10", "2 Corinthians 12:9",
+        "Nehemiah 8:10", "Psalm 28:7", "Habakkuk 3:19", "Isaiah 40:29",
+    ]),
+    ("word", "The Word & Wisdom", "How to think", [
+        "Psalm 119:105", "Psalm 119:11", "2 Timothy 3:16", "Hebrews 4:12", "Isaiah 40:8",
+        "James 1:5", "Proverbs 9:10", "Proverbs 4:23", "Proverbs 16:3", "Proverbs 27:17",
+        "Colossians 3:16", "Joshua 1:8",
+    ]),
+    ("love", "Love & Others", "How to treat people", [
+        "1 Corinthians 13:4", "1 Corinthians 13:13", "1 Corinthians 16:14", "1 John 4:19",
+        "1 John 4:18", "John 13:34", "Mark 12:31", "Romans 12:10", "Ephesians 4:32",
+        "Colossians 3:13", "1 Peter 4:8", "Proverbs 15:1",
+    ]),
+    ("walk", "Walking It Out", "How to actually live it", [
+        "Micah 6:8", "Matthew 5:14", "Matthew 5:16", "Colossians 3:23", "Galatians 5:22",
+        "Galatians 5:23", "Romans 12:2", "Romans 12:12", "James 1:22", "Hebrews 12:1",
+        "1 Corinthians 10:31", "Galatians 6:9", "Matthew 6:33", "Luke 6:31",
+    ]),
+    ("hope", "Hope & Promise", "What's coming", [
+        "Jeremiah 29:11", "Romans 8:28", "Romans 8:31", "Romans 8:38", "Lamentations 3:23",
+        "Revelation 21:4", "Psalm 30:5", "Isaiah 26:3", "Romans 15:13", "Philippians 1:6",
+        "Hebrews 11:1", "2 Corinthians 5:7", "Psalm 34:18", "Psalm 147:3", "Psalm 37:4",
+    ]),
+    ("prayer", "Prayer & Presence", "Talking to God", [
+        "Matthew 7:7", "1 Thessalonians 5:16", "1 Thessalonians 5:17", "1 Thessalonians 5:18",
+        "James 5:16", "Jeremiah 33:3", "Psalm 145:18", "Matthew 28:20", "Hebrews 13:5",
+    ]),
+    ("identity", "Identity", "Who you are now", [
+        "Psalm 139:14", "Ephesians 2:10", "Galatians 2:20", "1 Peter 2:9", "John 15:5",
+        "Jeremiah 1:5", "Zephaniah 3:17", "1 John 3:1",
+    ]),
+    ("cornerstones", "Cornerstones", "The ones everybody should know", [
+        "Psalm 19:1", "Psalm 121:2", "Isaiah 53:5", "Hebrews 13:8", "Revelation 3:20",
+        "Matthew 19:26", "Luke 1:37", "Philippians 2:3", "Proverbs 18:10", "Joshua 24:15",
+    ]),
 ]
+
+PACK_OF = {}
+DECK = []
+for _id, _label, _sub, _refs in PACKS:
+    for _r in _refs:
+        if _r not in PACK_OF:          # first pack that claims a verse owns it
+            PACK_OF[_r] = _id
+            DECK.append(_r)
 
 # extra verses for the scroll feed (deck verses are added automatically)
 FEED_EXTRA = [
@@ -96,18 +117,32 @@ def load_cache():
     return {}
 
 
+def tidy(text):
+    """Collapse whitespace and capitalise the first letter.
+
+    A verse that continues a sentence comes back from the API lowercase
+    ("for we walk by faith..."). Standing on its own on a card — and under an
+    illuminated drop cap — it has to read as a sentence."""
+    t = " ".join((text or "").split()).strip()
+    for i, ch in enumerate(t):
+        if ch.isalpha():
+            return t[:i] + ch.upper() + t[i + 1:]
+        if i > 2:            # only a leading quote/bracket may precede the letter
+            break
+    return t
+
+
 def fetch(ref, translation, cache):
     key = f"{translation}|{ref}"
     if key in cache:
-        return cache[key]
+        return tidy(cache[key])          # cache holds the raw API text
     url = ("https://bible-api.com/" + urllib.parse.quote(ref)
            + "?translation=" + translation)
     for attempt in range(4):
         try:
             with urllib.request.urlopen(url, timeout=25) as r:
                 d = json.loads(r.read().decode())
-            text = " ".join((d.get("text") or "").split()).strip()
-            # strip a leading verse number some responses carry
+            text = tidy(d.get("text") or "")
             if text:
                 cache[key] = text
                 with open(CACHE, "w") as f:
@@ -134,11 +169,13 @@ if __name__ == "__main__":
     for i, ref in enumerate(all_refs, 1):
         need_kjv = ref in DECK
         web = cache.get("web|" + ref)
+        web = tidy(web) if web else None
         if not web:
             web = fetch(ref, "web", cache); time.sleep(DELAY)
         kjv = None
         if need_kjv:
             kjv = cache.get("kjv|" + ref)
+            kjv = tidy(kjv) if kjv else None
             if not kjv:
                 kjv = fetch(ref, "kjv", cache); time.sleep(DELAY)
         if not web:
@@ -161,10 +198,17 @@ if __name__ == "__main__":
         out.append(f" [{js_str(ref)},{js_str(web)}],")
     out.append("];")
     out.append("")
+    out.append("// ---- Memory packs ----")
+    out.append("window.PACKS = [")
+    for pid, label, sub, _ in PACKS:
+        out.append(f" {{id:{js_str(pid)}, label:{js_str(label)}, sub:{js_str(sub)}}},")
+    out.append("];")
+    out.append("")
     out.append("// ---- Memory deck (WEB + KJV bundled so switching works offline) ----")
     out.append("window.MEMORY_VERSES = [")
     for ref, web, kjv in deck:
-        out.append(f" {{ref:{js_str(ref)}, web:{js_str(web)}, kjv:{js_str(kjv)}}},")
+        out.append(f" {{ref:{js_str(ref)}, pack:{js_str(PACK_OF[ref])}, "
+                   f"web:{js_str(web)}, kjv:{js_str(kjv)}}},")
     out.append("];")
     out.append("")
 

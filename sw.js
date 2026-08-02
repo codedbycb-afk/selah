@@ -2,7 +2,7 @@
    Selah — service worker
    Offline shell + web push (daily verse / lesson reminder)
    ============================================================ */
-const VERSION = 'selah-v3';
+const VERSION = 'selah-v4';
 const SHELL = [
   './', './index.html', './styles.css',
   './config.js', './data.js', './journey.js', './share.js', './push.js', './sync.js', './app.js',
@@ -10,6 +10,8 @@ const SHELL = [
   './assets/pilgrim.png', './assets/icon-192.png', './assets/icon-512.png',
   './assets/icon-180.png', './assets/favicon.png',
   './assets/glass-bg.jpg', './assets/road.jpg', './assets/road-card.jpg',
+  // the 30 story windows are ~3.9MB together, so they are NOT precached —
+  // the runtime handler below caches each one the first time it's scrolled to
 ];
 
 self.addEventListener('install', e => {
