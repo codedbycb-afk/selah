@@ -2,7 +2,7 @@
    Selah — service worker
    Offline shell + web push (daily verse / lesson reminder)
    ============================================================ */
-const VERSION = 'selah-v4.1';
+const VERSION = 'selah-v5';
 const SHELL = [
   './', './index.html', './styles.css',
   './config.js', './data.js', './journey.js', './share.js', './push.js', './sync.js', './app.js',

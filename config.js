@@ -1,17 +1,18 @@
 /* ============================================================
    Selah — deployment config
-   Fill these in and cloud sync, friends, and push switch on.
-   Everything still works offline and on-device if they stay blank.
+   These three values are PUBLIC by design. The anon key is meant to
+   ship in the browser; row level security in supabase/schema.sql is
+   what protects the data. The VAPID private key is NOT here — it
+   lives only in Supabase's function secrets.
    ============================================================ */
 window.SELAH_CONFIG = {
   /* Supabase → Project Settings → API */
-  SUPABASE_URL: '',        // e.g. https://abcdefgh.supabase.co
-  SUPABASE_ANON_KEY: '',   // the "anon / public" key — safe in the browser, RLS guards the data
+  SUPABASE_URL: 'https://kooikpwljxwsrokonpth.supabase.co',
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtvb2lrcHdsanh3c3Jva29ucHRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3MjAzNDMsImV4cCI6MjEwMTI5NjM0M30.py8mvIjpMJIB-Tl6JH3pee-ZCT7VjmDZVWlk6YoFmPk',
 
-  /* Web push → generate with:  npx web-push generate-vapid-keys
-     The PUBLIC key goes here. The PRIVATE key goes in Supabase secrets, never here. */
-  VAPID_PUBLIC_KEY: '',
+  /* Web push. Public half only — the private half is a Supabase secret. */
+  VAPID_PUBLIC_KEY: 'BOfdq6WEhTH2bIYZYfhiSv56zdI7zQt-cm3NUnXT0hoLy-uBVVY0AvlQH3FB1iE2XHJ1xQ0EaawTb7AwDR1lxUQ',
 
-  /* Where the app lives. Used for share links and friend invites. */
+  /* Used for share links and friend invites. */
   SITE_URL: 'https://codedbycb-afk.github.io/selah/',
 };

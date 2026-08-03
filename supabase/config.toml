@@ -1,0 +1,22 @@
+project_id = "kooikpwljxwsrokonpth"
+
+[auth]
+site_url = "https://codedbycb-afk.github.io/selah/"
+additional_redirect_urls = ["https://codedbycb-afk.github.io/selah/"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+double_confirm_changes = true
+otp_length = 6
+otp_expiry = 3600
+max_frequency = "20s"
+
+# Selah asks for a 6-digit code, not a link — the template must carry {{ .Token }}
+[auth.email.template.magic_link]
+subject = "Your Selah code"
+content_path = "./supabase/templates/magic_link.html"
