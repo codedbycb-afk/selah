@@ -111,5 +111,11 @@ The service worker caches aggressively. While developing, either bump `VERSION` 
 git add -A && git commit -m "…" && git push
 ```
 
-Same URL. **Bump `VERSION` in `sw.js` on any release that changes a cached file**, or
-returning users sit on the old shell for an extra load.
+Same URL. **Bump `VERSION` in `sw.js` on any release that changes a cached file** — that
+string is what tells installed copies a new build exists.
+
+Installed apps update themselves: the browser re-checks `sw.js` on every launch and every
+time the app returns to the foreground, and when a new worker takes over the page reloads
+itself. It will not reload mid-lesson, mid-flashcard or mid-chapter — the reload is held
+until you're out of it. Me → App version shows the running build and has a manual
+**Check for updates** button. Nobody ever has to delete and reinstall.

@@ -756,6 +756,10 @@ function renderMe(){
       <div class="link-row" id="switchP"><span>Switch profile</span><small>›</small></div>
       <div class="link-row" id="addP"><span>Add profile</span><small>›</small></div>
       <div class="link-row" id="signout"><span class="danger">Lock this profile</span><small>›</small></div>
+      <div class="setting">
+        <div class="lab"><b>App version</b><span id="verLine">checking…</span></div>
+        <button class="cta ghost sm" id="updBtn" style="width:auto;padding:10px 16px">Check for updates</button>
+      </div>
     </div>
     <p style="color:var(--ink-dim);font-size:.8rem;margin-top:26px;line-height:1.5">
       Selah · Scripture from the World English Bible (public domain). KJV via bible-api.com.
@@ -763,6 +767,11 @@ function renderMe(){
 
   Push.wire(renderMe);
   wireAccount();
+  $('#updBtn').onclick=()=>Updater.force();
+  Updater.version().then(v=>{
+    const el=$('#verLine'); if(!el) return;
+    el.textContent = v ? v.replace('selah-','') + ' · updates itself' : 'not installed';
+  });
 
   $$('#txseg button').forEach(b=>b.onclick=()=>{
     const id=b.dataset.tx; const t=TRANSLATIONS[id];
@@ -961,6 +970,86 @@ async function openFriendDetail(f){
 }
 
 /* ============================================================
+   UPDATES
+   A home-screen app has no address bar and no refresh button, so it has
+   to update itself. We ask the browser to re-check sw.js on every launch
+   and every time the app comes back to the foreground; when a new worker
+   takes over, we reload — but never mid-lesson.
+   ============================================================ */
+const Updater=(()=>{
+  let reg=null, reloading=false, pending=false;
+  /* The first time a worker takes control it's an install, not an update —
+     reloading for that would bounce a brand new visitor. Every claim after
+     that is a genuine update. This has to be a mutable flag, not a snapshot
+     taken at load: on a first visit the snapshot would be false forever, so
+     an update arriving later in the same session would be ignored. */
+  let hadController = !!(navigator.serviceWorker && navigator.serviceWorker.controller);
+
+  const busy=()=>['#lesson','#cards','#reader'].some(s=>{
+    const el=$(s); return el && (el.classList.contains('open'));
+  });
+
+  function reloadWhenIdle(){
+    if(reloading) return;
+    if(busy()){ pending=true; return; }      // don't yank the page mid-answer
+    reloading=true;
+    setTimeout(()=>location.reload(),150);
+  }
+  // if an update landed during a lesson, take it the moment they're done
+  setInterval(()=>{ if(pending && !busy()){ pending=false; reloadWhenIdle(); } },1500);
+
+  function attach(r){
+    reg=r;
+    if(!reg) return;
+    // a worker that installed while we were closed is already waiting
+    if(reg.waiting) reg.waiting.postMessage({type:'skip-waiting'});
+    reg.addEventListener('updatefound',()=>{
+      const w=reg.installing;
+      if(!w) return;
+      w.addEventListener('statechange',()=>{
+        if(w.state==='installed' && navigator.serviceWorker.controller) {
+          w.postMessage({type:'skip-waiting'});
+        }
+      });
+    });
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{
+      if(!hadController){ hadController=true; return; }   // first install, nothing to refresh
+      reloadWhenIdle();
+    });
+    check();
+    document.addEventListener('visibilitychange',()=>{
+      if(document.visibilityState==='visible') check();
+    });
+  }
+  const check=()=>{ try{ reg && reg.update(); }catch(e){} };
+
+  /* ask the running worker which build it is */
+  function version(){
+    return new Promise(res=>{
+      const sw=navigator.serviceWorker.controller;
+      if(!sw) return res(null);
+      const ch=new MessageChannel();
+      const t=setTimeout(()=>res(null),1200);
+      ch.port1.onmessage=e=>{ clearTimeout(t); res(e.data && e.data.version); };
+      try{ sw.postMessage({type:'version'},[ch.port2]); }catch(e){ clearTimeout(t); res(null); }
+    });
+  }
+
+  /* the manual button, for when you don't want to wait for a relaunch */
+  async function force(){
+    toast('Checking…');
+    if(!reg) reg=await navigator.serviceWorker.getRegistration();
+    if(!reg) return toast('No update system on this browser');
+    try{ await reg.update(); }catch(e){}
+    await new Promise(r=>setTimeout(r,1200));
+    if(reg.waiting){ reg.waiting.postMessage({type:'skip-waiting'}); toast('Updating…'); }
+    else { toast('Already up to date'); }
+  }
+
+  return {attach,check,version,force};
+})();
+
+/* ============================================================
    INSTALL PROMPT
    ============================================================ */
 let deferredInstall=null;
@@ -1086,7 +1175,7 @@ function bootApp(){
   const want=new URLSearchParams(location.search).get('view');
   go(['read','journey','learn','track','me'].includes(want)?want:'read');
 
-  Push.register().then(()=>Push.scheduleLocal());
+  Push.register().then(reg=>{ Updater.attach(reg); Push.scheduleLocal(); });
   setupInstall();
 
   // pull anything a second device added while we were away

@@ -2,7 +2,7 @@
    Selah — service worker
    Offline shell + web push (daily verse / lesson reminder)
    ============================================================ */
-const VERSION = 'selah-v6';
+const VERSION = 'selah-v7';
 const SHELL = [
   './', './index.html', './styles.css',
   './config.js', './data.js', './journey.js', './cards.js', './share.js', './push.js', './sync.js', './app.js',
@@ -104,9 +104,22 @@ self.addEventListener('notificationclick', e => {
   })());
 });
 
-/* local (no-server) fallback: the page asks us to fire a reminder later */
 self.addEventListener('message', e => {
   const m = e.data || {};
+
+  // the page asks which build it's running, for the version row in Me.
+  // Reply down the transferred port when there is one, since that's what
+  // the page is listening on.
+  if (m.type === 'version') {
+    const reply = { type: 'version', version: VERSION };
+    if (e.ports && e.ports[0]) e.ports[0].postMessage(reply);
+    else if (e.source) e.source.postMessage(reply);
+    return;
+  }
+  // a waiting worker can be told to take over immediately
+  if (m.type === 'skip-waiting') { self.skipWaiting(); return; }
+
+  /* local (no-server) fallback: fire a reminder now */
   if (m.type === 'local-notify') {
     self.registration.showNotification(m.title || 'Selah', {
       body: m.body, icon: './assets/icon-192.png', badge: './assets/icon-192.png',
