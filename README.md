@@ -76,6 +76,7 @@ everything stays local — the app is fully usable signed out.
 | `config.js` | Supabase + VAPID keys. Blank = local-only mode |
 | `data.js` | feed pool + memory deck — **generated**, see `tools/build-deck.py` |
 | `journey.js` | the 66-book road, chapter reader, offline scripture cache |
+| `cards.js` | flashcards — flip, name the book, name the reference |
 | `app.js` | profiles, feed, SRS engine, tracker, account & friends UI |
 | `push.js` | permission flow, subscriptions, reminder settings |
 | `sync.js` | Supabase REST client, state merge, friends |
