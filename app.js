@@ -636,6 +636,9 @@ function renderLearn(){
     </div>
 
     <button class="cta" id="startBtn">${dueN+newN>0?`Start lesson · ${dueN+newN} cards`:'Practice'}</button>
+    <div class="mode-row" style="margin-top:10px">
+      <button class="cta ghost" id="cardsBtn">Flashcards</button>
+    </div>
 
     <div class="deck">
       <h3>Packs</h3>
@@ -648,6 +651,7 @@ function renderLearn(){
         || `<div class="empty" style="padding:6vh 10px"><b>All caught up</b>Nothing is due. Start a pack to learn something new.</div>`}
     </div>`;
   $('#startBtn').onclick=()=>startLesson();
+  $('#cardsBtn').onclick=()=>Cards.open();
   $$('#learn-body .pack').forEach(b=>b.onclick=()=>openPack(b.dataset.pack));
 }
 
@@ -675,11 +679,15 @@ function openPack(id){
         <div class="stat-chip"><div class="n">${vs.length-m-l}</div><div class="k">Untouched</div></div>
       </div>
       <button class="cta" id="packStart">${m>=vs.length?'Review this pack':'Learn this pack'}</button>
+      <div class="mode-row" style="margin-top:10px">
+        <button class="cta ghost" id="packCards">Flashcards</button>
+      </div>
       <div class="deck">${vs.map(v=>vrow(v)).join('')}</div>
     </div>`;
   $('#bookSheet').classList.add('open');
   $('#closePack').onclick=()=>$('#bookSheet').classList.remove('open');
   $('#packStart').onclick=()=>startLesson({pack:id});
+  $('#packCards').onclick=()=>{ $('#bookSheet').classList.remove('open'); Cards.open({pack:id}); };
 }
 
 /* ============================================================

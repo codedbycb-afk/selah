@@ -23,6 +23,11 @@ Static site — no build step, works offline, installs to your home screen.
   you've opened once is yours offline. The road tracks **two** things: chapters read (gold) and
   verses memorized (green), with a badge on each book showing how many of its verses you've
   hidden and a shortcut to memorize straight from that book.
+- **Flashcards** — a scrollable stack with the reference hidden. Read the verse, tap to flip,
+  then name the book and the chapter:verse from four options each. Wrong books come from the
+  same division of the canon and wrong references from real verses in the same book, so it
+  can't be guessed by shape. Grades into the same SRS as the lesson runner. Runnable over the
+  whole deck, one pack, or one book.
 - **Learn** — "Memorize The Word." SM-2-lite spaced repetition over a 127-verse deck split into
   **11 themed packs** (Foundations, Trust & Fear, Anxiety & Rest, Strength, …), each with its own
   progress and its own lesson. **Six exercise types** that escalate with the card — arrange the

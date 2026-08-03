@@ -298,8 +298,11 @@ function openBook(name){
           <div class="j-bar sm mem"><i style="width:${Math.max(mem/vs.length*100,mem?3:0)}%"></i></div>
           <p class="q-hint" style="margin:0 0 14px">${mem} of ${vs.length} memorized</p>
           ${vs.map(v=>vrow(v)).join('')}
-          <button class="cta ghost" id="bookLearn" style="margin-top:16px">
-            ${mem>=vs.length?`Review ${b.name}’s verses`:`Memorize from ${b.name}`}</button>
+          <div class="mode-row" style="margin-top:16px">
+            <button class="cta ghost" id="bookLearn">
+              ${mem>=vs.length?`Review ${b.name}`:`Memorize`}</button>
+            <button class="cta ghost" id="bookCards">Flashcards</button>
+          </div>
         </div>`:`
         <div class="deck"><h3>Verses to hide from ${b.name}</h3>
           <p class="q-hint">None from this book in the deck yet.</p></div>`}
@@ -309,6 +312,7 @@ function openBook(name){
   $$('#bookSheet .chip').forEach(c=>c.onclick=()=>openChapter(b.name,+c.dataset.ch));
   const nx=$('#bookNext'); if(nx) nx.onclick=()=>{ for(let c=1;c<=b.chapters;c++) if(!done.includes(c)) return openChapter(b.name,c); };
   const bl=$('#bookLearn'); if(bl) bl.onclick=()=>startLesson({book:b.name});
+  const bc=$('#bookCards'); if(bc) bc.onclick=()=>{ $('#bookSheet').classList.remove('open'); Cards.open({book:b.name}); };
 }
 
 /* ============================================================
