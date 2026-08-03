@@ -1,4 +1,40 @@
-# Selah — backend setup
+# Selah — backend
+
+**STATUS: provisioned and live as of 2026-08-02.** The steps below are kept as a
+record of what was done and as a runbook for rebuilding from scratch.
+
+| | |
+|---|---|
+| Project ref | `kooikpwljxwsrokonpth` |
+| Region | `us-east-1` |
+| Org | CB's personal org (`coozaqdwxmfoatjmfrfo`) |
+| Dashboard | https://supabase.com/dashboard/project/kooikpwljxwsrokonpth |
+
+**Where the secrets live** — none of these are in the repo:
+
+| Secret | Location |
+|---|---|
+| VAPID private key | Supabase function secrets + `~/.config/selah/vapid.json` (600) |
+| Cron shared secret | Supabase Vault as `selah_cron_secret` + `~/.config/selah/cron-secret.txt` (600) |
+| Database password | `~/.config/selah/db-password.txt` (600) |
+
+The pg_cron job reads the shared secret out of Vault at run time, which is why
+`migrations/20260803011000_cron.sql` is safe to publish. The migration that
+inserted the Vault secret was applied once and never committed; its history row
+is marked `reverted`, so rebuilding on a fresh project means re-running:
+
+```sql
+select vault.create_secret('<new secret>', 'selah_cron_secret');
+```
+
+### Known limit — email
+Supabase's built-in mailer is rate limited to a handful of messages per hour and
+is meant for testing. It is fine for CB signing in on his own devices. Before
+other people can sign in and add each other as friends, point Auth at a real
+SMTP provider (Resend's free tier is plenty) under
+**Authentication → Emails → SMTP Settings**.
+
+---
 
 Everything here is optional. With `config.js` left blank, Selah runs exactly as
 it does today: on-device, offline, free. Filling it in adds cross-device sync,
