@@ -292,6 +292,7 @@ function grade(ref,q){
 /* a lesson can be the whole deck, one pack, or one book of the Bible */
 function scopedDeck(scope){
   if(!scope) return MEMORY_VERSES;
+  if(scope.refs) return scope.refs.map(r=>MEMORY_VERSES.find(v=>v.ref===r)).filter(Boolean);
   if(scope.pack) return MEMORY_VERSES.filter(v=>v.pack===scope.pack);
   if(scope.book) return MEMORY_VERSES.filter(v=>bookOf(v.ref)===scope.book);
   return MEMORY_VERSES;
@@ -346,12 +347,19 @@ const normalize=t=>t.toLowerCase().replace(/[’']/g,'').replace(/[^a-z0-9\s]/g,
    ============================================================ */
 let LS=null;
 function startLesson(scope){
-  const {due,fresh}=dueCards(scope);
-  let queue=[...due, ...fresh.slice(0,4)];
-  if(queue.length===0) queue=shuffle(scopedDeck(scope)).slice(0,5); // practice run
-  queue=shuffle(queue).slice(0,8);
+  let queue;
+  if(scope && scope.refs){
+    // a path node teaches an exact set — every verse in it, every time
+    queue=shuffle(scopedDeck(scope));
+  }else{
+    const {due,fresh}=dueCards(scope);
+    queue=[...due, ...fresh.slice(0,4)];
+    if(queue.length===0) queue=shuffle(scopedDeck(scope)).slice(0,5); // practice run
+    queue=shuffle(queue).slice(0,8);
+  }
   if(!queue.length) return toast('Nothing in that set yet');
-  LS={queue,idx:0,total:queue.length,xp:0,hearts:5,correct:0,scope:scope||null};
+  LS={queue,idx:0,total:queue.length,xp:0,hearts:5,correct:0,scope:scope||null,
+      test:!!(scope&&scope.test), onDone:scope&&scope.onDone||null};
   $('#sheet').classList.remove('open'); $('#bookSheet').classList.remove('open');
   $('#lesson').classList.add('open');
   renderQ();
@@ -390,7 +398,10 @@ function nextQ(){ LS.idx++; renderQ(); }
 function reward(q){ // apply SRS + xp
   grade(LS.v.ref,q);
   const gain=q==='again'?0:q==='hard'?8:q==='easy'?15:12;
-  LS.xp+=gain; if(q!=='again') LS.correct++;
+  LS.xp+=gain;
+  if(q!=='again') LS.correct++;
+  // a mastery test scores on exact answers only — "nearly" doesn't pass a gate
+  if(q==='good'||q==='easy') LS.exact=(LS.exact||0)+1;
 }
 function showFeedback(good,answer){
   const fb=$('#feedback');
@@ -562,17 +573,46 @@ function finishLesson(){
   bump('lesson',LS.xp);
   const body=$('#lesson .lesson-body'), foot=$('#lesson .lesson-foot');
   $('#lesson .progress i').style.width='100%';
-  const s=streakCount();
+  const exact=LS.exact||0, pct=LS.total?Math.round(exact/LS.total*100):0;
+  const onDone=LS.onDone, scope=LS.scope, isTest=LS.test;
+  const stats={correct:LS.correct,exact,total:LS.total,xp:LS.xp,pct};
+
+  if(isTest){
+    const passed=pct>=100;
+    body.innerHTML=`<div class="done-card">
+      <div class="halo">${passed?'✦':'✧'}</div>
+      <h2>${passed?'Unit mastered':'Not yet'}</h2>
+      <p>${exact} of ${LS.total} exactly right${passed?'':' — a mastery test needs every one'}</p>
+      <div class="done-stats">
+        <div class="stat-chip"><div class="n">${pct}%</div><div class="k">Score</div></div>
+        <div class="stat-chip"><div class="n">+${LS.xp}</div><div class="k">XP</div></div>
+        <div class="stat-chip"><div class="n">${streakCount()}</div><div class="k">Day streak</div></div>
+      </div>
+      ${passed?'':`<p style="color:var(--ink-dim);font-size:.95rem;margin-top:4px">
+        Nothing is lost — the verses you missed are already queued for review.</p>`}</div>`;
+    foot.innerHTML=passed
+      ? `<button class="cta" id="doneBtn">Continue</button>`
+      : `<button class="cta" id="retryBtn">Try again</button>
+         <button class="cta ghost sm" id="doneBtn" style="margin-top:10px">Practice first</button>`;
+    const close=()=>{ $('#lesson').classList.remove('open'); LS=null; if(onDone) onDone(stats); renderLearn(); refreshChrome(); };
+    $('#doneBtn').onclick=close;
+    const r=$('#retryBtn'); if(r) r.onclick=()=>{ $('#lesson').classList.remove('open'); LS=null;
+      if(onDone) onDone(stats); startLesson(scope); };
+    vibrate(passed?[10,40,10,40,20]:[30,60,30]);
+    return;
+  }
+
   body.innerHTML=`<div class="done-card">
     <div class="halo">✦</div><h2>Lesson complete</h2>
     <p>${LS.correct} of ${LS.total} from memory</p>
     <div class="done-stats">
       <div class="stat-chip"><div class="n">+${LS.xp}</div><div class="k">XP</div></div>
-      <div class="stat-chip"><div class="n">${s}</div><div class="k">Day streak</div></div>
+      <div class="stat-chip"><div class="n">${streakCount()}</div><div class="k">Day streak</div></div>
       <div class="stat-chip"><div class="n">${masteredCount()}</div><div class="k">Mastered</div></div>
     </div></div>`;
   foot.innerHTML=`<button class="cta" id="doneBtn">Done</button>`;
-  $('#doneBtn').onclick=()=>{ $('#lesson').classList.remove('open'); LS=null; renderLearn(); refreshChrome(); };
+  $('#doneBtn').onclick=()=>{ $('#lesson').classList.remove('open'); LS=null;
+    if(onDone) onDone(stats); renderLearn(); refreshChrome(); };
   vibrate([10,40,10,40,20]);
 }
 
@@ -594,11 +634,13 @@ function renderLearn(){
     const vs=packVerses(p.id); if(!vs.length) return '';
     const m=countMastered(vs), l=countLearning(vs);
     const pp=vs.length?m/vs.length:0;
-    const state=m>=vs.length?'done':(m+l)>0?'active':'';
+    const u=window.Path&&Path.unitById(p.id);
+    const locked=u&&!Path.unitOpen(u);
+    const state=locked?'locked':m>=vs.length?'done':(m+l)>0?'active':'';
     return `<button class="pack ${state}" data-pack="${p.id}">
         <div class="pack-top">
           <div class="pack-name caps">${p.label}</div>
-          <div class="pack-n">${m}<span>/${vs.length}</span></div>
+          <div class="pack-n">${locked?'🔒':`${m}<span>/${vs.length}</span>`}</div>
         </div>
         <div class="pack-sub">${p.sub}</div>
         <div class="pack-bar"><i style="width:${Math.max(pp*100,pp>0?4:0)}%"></i></div>
@@ -607,9 +649,26 @@ function renderLearn(){
       </button>`;
   }).join('');
 
+  /* where the path has you right now — this is the main thing to do */
+  const here=window.Path?Path.current():null;
+  const hereCard=here?`
+    <div class="here-card gc">
+      <div class="here-top">
+        <div class="here-eyebrow caps">Up next on the path</div>
+        <div class="here-unit caps">${here.unit.label}</div>
+        <div class="here-node">${here.node.type==='test'?'Mastery test — every verse, exactly'
+          :here.node.type==='cards'?'Flashcard review'
+          :'Lesson · '+here.node.label}</div>
+      </div>
+      <button class="cta" id="hereBtn">${here.node.type==='test'?'Take the test':'Continue'}</button>
+      <button class="cta ghost sm" id="seePath" style="margin-top:10px">See the whole path</button>
+    </div>`:'';
+
   $('#learn-body').innerHTML=`
     <div class="page-h"><div class="eyebrow">Learn</div><h1>Memorize The Word</h1>
       <p>A few verses a day. Spaced so they actually stick.</p></div>
+
+    ${hereCard}
 
     <div class="rank-card gc">
       <div class="rank-row">
@@ -635,13 +694,15 @@ function renderLearn(){
       <div class="stat-chip"><div class="n">${learningCount()}</div><div class="k">Learning</div></div>
     </div>
 
-    <button class="cta" id="startBtn">${dueN+newN>0?`Start lesson · ${dueN+newN} cards`:'Practice'}</button>
-    <div class="mode-row" style="margin-top:10px">
-      <button class="cta ghost" id="cardsBtn">Flashcards</button>
+    <div class="deck"><h3>Practice</h3>
+      <button class="cta ghost" id="startBtn">${dueN>0?`Review ${dueN} due verse${dueN===1?'':'s'}`:'Free practice'}</button>
+      <div class="mode-row" style="margin-top:10px">
+        <button class="cta ghost" id="cardsBtn">Flashcards</button>
+      </div>
     </div>
 
     <div class="deck">
-      <h3>Packs</h3>
+      <h3>Units</h3>
       <div class="packs">${packCards}</div>
     </div>
 
@@ -652,6 +713,8 @@ function renderLearn(){
     </div>`;
   $('#startBtn').onclick=()=>startLesson();
   $('#cardsBtn').onclick=()=>Cards.open();
+  const hb=$('#hereBtn'); if(hb) hb.onclick=()=>Path.openNode(here.unit,here.idx);
+  const sp=$('#seePath'); if(sp) sp.onclick=()=>{ Path.setMode('learn'); go('journey'); };
   $$('#learn-body .pack').forEach(b=>b.onclick=()=>openPack(b.dataset.pack));
 }
 
@@ -664,6 +727,8 @@ function vrow(v){
 
 /* ---------- a pack, opened ---------- */
 function openPack(id){
+  const u=window.Path&&Path.unitById(id);
+  if(u&&!Path.unitOpen(u)){ toast('Master the unit before it first'); vibrate(12); return; }
   const p=packById(id), vs=packVerses(id);
   const m=countMastered(vs), l=countLearning(vs);
   $('#bookSheet').innerHTML=`

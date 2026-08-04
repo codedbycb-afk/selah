@@ -160,10 +160,16 @@ const Cards = (() => {
   function open(scope) {
     const pool = scopedDeck(scope);
     if (!pool.length) return toast('Nothing in that set yet');
-    // due and half-learned verses first — that's where naming the reference bites
-    const weight = v => { const c = card(v.ref); return c.reps === 0 ? 1 : c.due <= Date.now() ? 2 : 0; };
-    const queue = shuffle(pool).sort((a, b) => weight(b) - weight(a)).slice(0, 12);
-    SES = { queue, answers: {}, xp: 0, right: 0, scope: scope || null };
+    let queue;
+    if (scope && scope.refs) {
+      queue = shuffle(pool);                 // a path node reviews its exact set
+    } else {
+      // due and half-learned verses first — that's where naming the reference bites
+      const weight = v => { const c = card(v.ref); return c.reps === 0 ? 1 : c.due <= Date.now() ? 2 : 0; };
+      queue = shuffle(pool).sort((a, b) => weight(b) - weight(a)).slice(0, 12);
+    }
+    SES = { queue, answers: {}, xp: 0, right: 0, scope: scope || null,
+            onDone: (scope && scope.onDone) || null };
 
     const wrap = $('#cards');
     wrap.classList.add('open');
@@ -209,9 +215,12 @@ const Cards = (() => {
   }
 
   function close() {
+    const cb = SES && SES.onDone;
+    const stats = SES ? { right: SES.right, total: SES.queue.length, xp: SES.xp } : null;
     $('#cards').classList.remove('open');
     $('#cards').innerHTML = '';
     SES = null;
+    if (cb) cb(stats);
     renderLearn();
     refreshChrome();
   }

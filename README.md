@@ -17,12 +17,18 @@ Static site — no build step, works offline, installs to your home screen.
   exists (Psalm 23 lands on the Good Shepherd, John 3:16 on the Crucifixion) and falls back to a
   hash of the reference otherwise, so a verse always gets the same window. Keep / Copy / Share,
   where Share paints a real stained-glass card.
-- **Journey** — the road from Genesis to Revelation. 66 book milestones on a winding path,
+- **Journey** — two roads, switched at the top. **Reading** is the Genesis-to-Revelation
+  read-through. 66 book milestones on a winding path,
   1,189 chapter stones, and a little pilgrim carrying his cross who advances as you read.
   Tap a book → tap a chapter → read it → mark it. Chapters cache to IndexedDB, so anything
   you've opened once is yours offline. The road tracks **two** things: chapters read (gold) and
   verses memorized (green), with a badge on each book showing how many of its verses you've
   hidden and a shortcut to memorize straight from that book.
+  **Learning** is a gated path built the way a language tree is: 11 units, each broken into
+  short lesson nodes of 3 verses, flashcard reviews that sweep back over everything the unit
+  has covered, and a mastery test at the end. The test scores exact answers only and has to be
+  **100%** — nothing past it opens until it is. Foundations (15 verses) is the first unit and
+  every other unit, including practice on it, stays locked until Foundations is clean.
 - **Flashcards** — a scrollable stack with the reference hidden. Read the verse, tap to flip,
   then name the book and the chapter:verse from four options each. Wrong books come from the
   same division of the canon and wrong references from real verses in the same book, so it
@@ -75,7 +81,8 @@ everything stays local — the app is fully usable signed out.
 | `styles.css` | stained-glass design system (Cinzel + Cormorant Garamond) |
 | `config.js` | Supabase + VAPID keys. Blank = local-only mode |
 | `data.js` | feed pool + memory deck — **generated**, see `tools/build-deck.py` |
-| `journey.js` | the 66-book road, chapter reader, offline scripture cache |
+| `journey.js` | the 66-book reading road, chapter reader, offline scripture cache |
+| `path.js` | the learning path — units, gated nodes, mastery gates |
 | `cards.js` | flashcards — flip, name the book, name the reference |
 | `app.js` | profiles, feed, SRS engine, tracker, account & friends UI |
 | `push.js` | permission flow, subscriptions, reminder settings |

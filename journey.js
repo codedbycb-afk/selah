@@ -160,6 +160,8 @@ function layout(){
 }
 
 function renderJourney(){
+  // two roads share this tab: the read-through, and the learning path
+  if(window.Path && Path.mode()==='learn') return Path.render();
   const {rows,height}=layout();
   const cur=currentBook(), stop=nextStop();
   const pts=rows.filter(r=>r.type==='book');
@@ -196,8 +198,8 @@ function renderJourney(){
   const memPct=memTotal?memAll/memTotal:0;
   const booksWithMem=BIBLE.filter(b=>countMastered(bookVerses(b.name))>0).length;
   $('#journey-body').innerHTML=`
-    <div class="page-h"><div class="eyebrow">The road</div><h1>Journey</h1>
-      <p>Genesis to Revelation, one chapter at a time.</p></div>
+    ${window.Path?Path.modeSwitch('read'):''}
+    <p class="j-lede">Genesis to Revelation, one chapter at a time.</p>
 
     <div class="j-hero gc">
       <div class="j-track">
@@ -230,8 +232,9 @@ function renderJourney(){
       <div class="pilgrim" id="pilgrim"></div>
     </div>`;
 
+  if(window.Path) Path.wireMode();
   $('#jContinue').onclick=()=>openChapter(stop.book.name,stop.ch);
-  $('#jLearn').onclick=()=>go('learn');
+  $('#jLearn').onclick=()=>{ if(window.Path) Path.setMode('learn'); else go('learn'); };
   $$('#journey-body .j-node').forEach(n=>n.onclick=()=>{
     if(n.classList.contains('locked')){ toast('Finish the road ahead of it first'); vibrate(12); return; }
     openBook(n.dataset.book);

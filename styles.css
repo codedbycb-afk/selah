@@ -547,6 +547,73 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
   box-shadow:0 2px 8px rgba(0,0,0,.6);}
 
 /* ============================================================
+   THE LEARNING PATH — units, gated nodes, mastery gates
+   ============================================================ */
+.seg.wide{width:100%;margin:0 0 20px;}
+.seg.wide button{flex:1;text-align:center;padding:12px 0;font-size:.72rem;letter-spacing:.16em;
+  text-transform:uppercase;font-family:"Cinzel",serif;}
+.j-lede{color:var(--ink-dim);font-size:1.05rem;line-height:1.5;max-width:34ch;margin:-8px 0 20px;}
+
+.lp-path{position:relative;margin:8px -6px 40px;}
+.lp-head{position:absolute;left:0;right:0;padding:0 4px;}
+.lp-head-in{border:1px solid var(--line);border-radius:16px;padding:14px 16px;
+  background:linear-gradient(160deg,rgba(230,196,115,.08),rgba(14,14,24,.85));}
+.lp-head.locked .lp-head-in{opacity:.42;}
+.lp-head.done .lp-head-in{border-color:rgba(230,196,115,.5);
+  box-shadow:0 0 24px rgba(230,196,115,.13);}
+.lp-h-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;}
+.lp-h-top b{font-size:.86rem;letter-spacing:.14em;color:var(--gold);}
+.lp-n{font-family:"Cinzel",serif;font-size:.9rem;color:var(--ink-dim);}
+.lp-lock{font-size:.85rem;filter:grayscale(1);opacity:.7;}
+.lp-seal{font-size:.58rem;letter-spacing:.16em;color:var(--gold);}
+.lp-sub{display:block;color:var(--ink-dim);font-size:.86rem;margin:5px 0 10px;}
+
+.lp-node{all:unset;cursor:pointer;position:absolute;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;width:132px;}
+.lp-face{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:"Cinzel",serif;font-size:1.3rem;color:var(--ink);
+  background:linear-gradient(165deg,rgba(60,60,84,.95),rgba(12,12,20,.95));
+  border:2px solid rgba(10,10,16,.9);
+  box-shadow:0 7px 0 rgba(0,0,0,.55), inset 0 2px 8px rgba(255,255,255,.10);}
+.lp-face svg{width:26px;height:26px;}
+.lp-label{margin-top:9px;font-size:.66rem;letter-spacing:.05em;color:var(--ink-dim);text-align:center;
+  font-family:ui-sans-serif,system-ui,sans-serif;text-shadow:0 2px 6px rgba(0,0,0,.9);line-height:1.25;}
+.lp-best{font-size:.58rem;color:var(--gold);opacity:.8;margin-top:2px;
+  font-family:ui-sans-serif,system-ui,sans-serif;}
+.lp-node:active .lp-face{transform:translateY(3px);box-shadow:0 4px 0 rgba(0,0,0,.55);}
+
+.lp-node.open .lp-face{background:linear-gradient(165deg,rgba(199,154,60,.5),rgba(20,16,8,.95));
+  border-color:rgba(230,196,115,.5);}
+.lp-node.done .lp-face{color:#1a1406;background:linear-gradient(165deg,var(--gold),var(--gold-2));
+  box-shadow:0 7px 0 rgba(0,0,0,.5), 0 0 26px rgba(230,196,115,.4);}
+.lp-node.done .lp-label{color:var(--gold);}
+.lp-node.locked{cursor:default;}
+.lp-node.locked .lp-face{opacity:.3;filter:saturate(.15);}
+.lp-node.locked .lp-label{opacity:.35;}
+/* the mastery gate wears a different hat */
+.lp-node.lp-test .lp-face{border-radius:18px;}
+.lp-node.lp-test.open .lp-face{border-color:var(--gold);box-shadow:0 7px 0 rgba(0,0,0,.55),0 0 30px rgba(230,196,115,.3);}
+.lp-node.here .lp-face{animation:pulseHere 2s ease-in-out infinite;}
+@keyframes pulseHere{0%,100%{box-shadow:0 7px 0 rgba(0,0,0,.55), 0 0 0 rgba(230,196,115,.5);}
+  50%{box-shadow:0 7px 0 rgba(0,0,0,.55), 0 0 26px 6px rgba(230,196,115,.34);}}
+.lp-flag{position:absolute;top:-30px;background:linear-gradient(180deg,var(--gold),var(--gold-2));
+  color:#1a1406;font-size:.56rem;letter-spacing:.18em;padding:5px 12px;border-radius:8px;
+  box-shadow:0 4px 12px rgba(0,0,0,.5);}
+.lp-flag::after{content:"";position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);
+  border:5px solid transparent;border-top-color:var(--gold-2);}
+
+/* "up next" card on the Learn tab */
+.here-card{padding:18px;margin-bottom:20px;}
+.here-top{position:relative;z-index:1;margin-bottom:16px;}
+.here-eyebrow{font-size:.58rem;letter-spacing:.24em;color:var(--gold);}
+.here-unit{font-size:1.3rem;letter-spacing:.04em;margin:7px 0 4px;}
+.here-node{color:var(--ink-dim);font-size:.95rem;}
+.here-card .cta{position:relative;z-index:1;}
+
+.pack.locked{opacity:.5;cursor:default;}
+.pack.locked .pack-bar{opacity:.4;}
+
+/* ============================================================
    FLASHCARDS — scroll a stack, flip, name the reference
    ============================================================ */
 .cards{position:fixed;inset:0;z-index:44;background:var(--bg);display:none;flex-direction:column;}
